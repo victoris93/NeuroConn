@@ -56,9 +56,9 @@ def test_clean_signal_shape():
     fmriprepped_cobre = FmriPreppedDataSet(cobre)
     fmriprepped_depression = FmriPreppedDataSet(depression)
 
-    clean_ts_cobre_2ses = np.asarray(fmriprepped_cobre.clean_signal(subjects = fmriprepped_cobre.subjects[0], task = "rest"))
-    clean_ts_cobre_1ses = np.asarray(fmriprepped_cobre.clean_signal(subjects = fmriprepped_cobre.subjects[1], task = "rest"))
-    clean_ts_depression_no_ses = np.asarray(fmriprepped_depression.clean_signal(subjects = fmriprepped_depression.subjects[0], task = "rest"))
+    clean_ts_cobre_2ses = np.asarray(fmriprepped_cobre.clean_signal(subject = fmriprepped_cobre.subjects[0], task = "rest"))
+    clean_ts_cobre_1ses = np.asarray(fmriprepped_cobre.clean_signal(subject = fmriprepped_cobre.subjects[1], task = "rest"))
+    clean_ts_depression_no_ses = np.asarray(fmriprepped_depression.clean_signal(subject = fmriprepped_depression.subjects[0], task = "rest"))
 
     assert clean_ts_cobre_2ses.shape[0] == 2
     assert clean_ts_cobre_2ses.shape[2] == n_parcels
