@@ -2,7 +2,6 @@ import nilearn
 import numpy as np
 import pandas as pd
 import os
-import hcp_utils as hcp
 import nibabel as nib
 import json
 from nilearn import datasets
@@ -12,6 +11,7 @@ from sklearn.impute import SimpleImputer
 
 
 class RawDataset():
+
     def __init__(self, BIDS_path):
         self.BIDS_path = BIDS_path
         if self.BIDS_path is not None:
@@ -66,6 +66,7 @@ class FmriPreppedDataSet(RawDataset):
         return f'Subjects={self.subjects},\n Data_Path={self.data_path})'
     
     def _find_sub_dirs(self):
+        """Finds the sub-directories in the derivatives folder if they exist."""
         path_not_found = True
         while path_not_found:
             subdirs = os.listdir(self.data_path)
@@ -78,6 +79,20 @@ class FmriPreppedDataSet(RawDataset):
         return self.data_path
     
     def get_ts_paths(self, subject, task): # needs to be adaptred to multiple sessions
+        #numpy-style docstring
+        """
+        Parameters
+        ----------
+        subject : str
+            The subject ID.
+        task : str
+            The task name.
+        Returns
+        -------
+        ts_paths : list
+            A list of paths to the time series files.
+        """
+        
         subject_dir = os.path.join(self.data_path, f'sub-{subject}')
         session_names = self.get_sessions(subject)
         ts_paths = []
@@ -101,6 +116,18 @@ class FmriPreppedDataSet(RawDataset):
         return session_names
     
     def _impute_nans_confounds(self, dataframe, pick_confounds = None):
+        """
+        Parameters
+        ----------
+        dataframe : pandas.DataFrame
+            The dataframe containing the confounds.
+        pick_confounds : list or numpy.ndarray
+            The confounds to be picked from the dataframe.
+        Returns
+        -------
+        df_no_nans : pandas.DataFrame
+            The dataframe with the confounds without NaNs.
+        """
         imputer = SimpleImputer(strategy='mean')
         if pick_confounds is None:
             pick_confounds = np.loadtxt(self.default_confounds_path, dtype = 'str')
@@ -111,6 +138,22 @@ class FmriPreppedDataSet(RawDataset):
         return df_no_nans
     
     def get_confounds(self, subject, task, no_nans = True, pick_confounds = None):
+        """
+        Parameters
+        ----------
+        subject : str
+            The subject ID.
+        task : str
+            The task name.
+        no_nans : bool
+            Whether to impute NaNs in the confounds.
+        pick_confounds : list or numpy.ndarray
+            The confounds to be picked from the dataframe.
+        Returns
+        -------
+        confound_list : list
+            A list of confounds.
+        """
         if pick_confounds == None:
             pick_confounds = np.loadtxt(self.default_confounds_path, dtype = 'str')
         else:
@@ -146,53 +189,111 @@ class FmriPreppedDataSet(RawDataset):
 
         return confound_list
     
-    def parcellate(self, subjects = None, parcellation = 'schaefer',task ="rest", n_parcels = 1000, gsr = False): # adapt to multiple sessions
+    def parcellate(self, subject, parcellation = 'schaefer',task ="rest", n_parcels = 1000, gsr = False): # adapt to multiple sessions
+        """
+        Parameters
+        ----------
+        subject : str
+            subject id
+        parcellation : str
+            parcellation to use
+        task : str
+            task to use
+        n_parcels : int
+            number of parcels to use
+        gsr : bool  
+            whether to use global signal regression
+        Returns
+        -------
+        parc_ts_list : list
+            list of parcellated time series
+        """
         atlas = None
         if parcellation == 'schaefer':
             atlas = datasets.fetch_atlas_schaefer_2018(n_rois=n_parcels, yeo_networks=7, resolution_mm=1, base_url= None, resume=True, verbose=1)
         masker =  NiftiLabelsMasker(labels_img=atlas.maps, standardize=True, memory='nilearn_cache', verbose=5)
-        if subjects is None:
-            subjects = self.subjects
-        elif not isinstance(subjects, (list, np.ndarray)):
-            subjects = [subjects]
+
         parc_ts_list = []
-        for subject in subjects:
-            subject_ts_paths = self.get_ts_paths(subject, task)
-            confounds = self.get_confounds(subject, task)
-            for subject_ts, subject_confounds in zip(subject_ts_paths, confounds):
-                if gsr == False:
-                    parc_ts = masker.fit_transform(subject_ts, confounds = subject_confounds.drop("global_signal", axis = 1))
-                    parc_ts_list.append(parc_ts)
-                else:
-                    parc_ts = masker.fit_transform(subject_ts, confounds = subject_confounds)
-                    parc_ts_list.append(parc_ts)
+        subject_ts_paths = self.get_ts_paths(subject, task)
+        confounds = self.get_confounds(subject, task)
+        for subject_ts, subject_confounds in zip(subject_ts_paths, confounds):
+            if gsr == False:
+                parc_ts = masker.fit_transform(subject_ts, confounds = subject_confounds.drop("global_signal", axis = 1))
+                parc_ts_list.append(parc_ts)
+            else:
+                parc_ts = masker.fit_transform(subject_ts, confounds = subject_confounds)
+                parc_ts_list.append(parc_ts)
         return parc_ts_list
     
-    def clean_signal(self, subjects, task="rest", parcellation='schaefer', n_parcels=1000, gsr=False): # add a save option + path
-        if subjects is None:
-            subjects = self.subjects
-        elif not isinstance(subjects, (list, np.ndarray)):
-            subjects = [subjects]
-        parc_ts_list = self.parcellate(subjects, parcellation, task, n_parcels, gsr)
+    def clean_signal(self, subject, task="rest", parcellation='schaefer', n_parcels=1000, gsr=False, save = False, save_to = None): # add a save option + path
+        """
+        Parameters
+        ----------
+        subject : str
+            subject id
+        task : str
+            task to use
+        parcellation : str
+            parcellation to use
+        n_parcels : int
+            number of parcels to use
+        gsr : bool
+            whether to use global signal regression
+        save : bool
+            whether to save the cleaned time series
+        save_to : str   
+            path to save the cleaned time series
+        Returns
+        -------
+        clean_ts_array : np.array 
+            cleaned time series
+        """
+        parc_ts_list = self.parcellate(subject, parcellation, task, n_parcels, gsr)
         clean_ts_array =[]
         for parc_ts in parc_ts_list:
             clean_ts = signal.clean(parc_ts, t_r = 2, low_pass=0.08, high_pass=0.01, standardize=True, detrend=True)
             clean_ts_array.append(clean_ts[10:]) # discarding first 10 volumes
         clean_ts_array = np.array(clean_ts_array)
+        if save == True:
+            if save_to is None:
+                save_to = os.path.join(f'{self.data_path}/sub-{subject}', 'func', f'clean-ts-sub-{subject}-{parcellation}{n_parcels}.npy')
+            else:
+                save_to = os.path.join(save_to, f'clean-ts-sub-{subject}-{parcellation}{n_parcels}.npy')
+            np.save(save_to, clean_ts_array)
         return clean_ts_array
     
-    def get_conn_matrix(self, subjects, parcellation = 'schaefer', task = 'rest', n_parcels = 1000, gsr = False, z_transformed = True): # add a save option + path; add load ts option
+    def get_conn_matrix(self, subject, subject_ts = None, parcellation = 'schaefer', task = 'rest', n_parcels = 1000, gsr = False, z_transformed = True, save = False, save_to = None)
         """
-        Computes an individual connectivity matrix if one subject is passed,
-        or a group connectivity matrix if a list of subjects is passed.
-        Returns a 3D array of shape (n_subjects, n_parcels, n_parcels)
+        Parameters
+        ----------
+        subject : str
+            subject id
+        subject_ts : str
+            path to the cleaned time series
+        parcellation : str
+            parcellation to use
+        task : str  
+            task to use
+        n_parcels : int
+            number of parcels to use
+        gsr : bool
+            whether to use global signal regression
+        z_transformed : bool
+            whether to z transform the connectivity matrix
+        save : bool
+            whether to save the connectivity matrix
+        save_to : str
+            path to save the connectivity matrix
+        Returns
+        -------
+        conn_matrix : np.array  
+            connectivity matrix of shape (n_sessions, n_parcels, n_parcels)
         """
-        if subjects is None:
-            subjects = self.subjects
-        elif not isinstance(subjects, (list, np.ndarray)):
-            subjects = [subjects]
+        if subject_ts is None:
+            subj_ts_array = self.clean_signal(subject, task, parcellation, n_parcels, gsr)
+        else:
+            subj_ts_array = np.load(subject_ts)
         
-        subj_ts_array = self.clean_signal(subjects, task, parcellation, n_parcels, gsr)
         conn_matrix = np.zeros((subj_ts_array.shape[0], n_parcels, n_parcels))
         
         for i, subj_ts in enumerate(subj_ts_array):
@@ -205,6 +306,12 @@ class FmriPreppedDataSet(RawDataset):
                 if np.isinf(conn_matrix[i]).any():
                     inf_indices = np.where(np.isinf(conn_matrix[i]))
                     conn_matrix[i][inf_indices] = 1
+        if save == True:
+            if save_to is None:
+                save_to = os.path.join(f'{self.data_path}/sub-{subject}', 'func', f'conn-matrix-sub-{subject}-{parcellation}{n_parcels}.npy')
+            else:
+                save_to = os.path.join(save_to, f'conn-matrix-sub-{subject}-{parcellation}{n_parcels}.npy')
+            np.save(save_to, conn_matrix)
         return conn_matrix
         
     
