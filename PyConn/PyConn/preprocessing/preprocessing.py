@@ -10,6 +10,16 @@ from nilearn import signal
 from sklearn.impute import SimpleImputer
 
 
+def z_transform_conn_matrix(conn_matrix):
+    conn_matrix = np.arctanh(conn_matrix) # Fisher's z transform
+    if np.isnan(conn_matrix).any(): # remove nans and infs in the matrix
+        nan_indices = np.where(np.isnan(conn_matrix))
+        conn_matrix[nan_indices] = .0000000001
+    if np.isinf(conn_matrix).any():
+        inf_indices = np.where(np.isinf(conn_matrix))
+        conn_matrix[inf_indices] = 1
+    return conn_matrix
+
 class RawDataset():
 
     def __init__(self, BIDS_path):
@@ -62,6 +72,7 @@ class FmriPreppedDataSet(RawDataset):
         self.data_path = self.BIDS_path + '/derivatives'
         self.data_path = self._find_sub_dirs()
         self.default_confounds_path = os.path.join(os.path.dirname(__file__), "default_confounds.txt")
+        self.subject_conn_paths = {}
     def __repr__(self):
         return f'Subjects={self.subjects},\n Data_Path={self.data_path})'
     
@@ -262,7 +273,7 @@ class FmriPreppedDataSet(RawDataset):
             np.save(save_to, clean_ts_array)
         return clean_ts_array
     
-    def get_conn_matrix(self, subject, subject_ts = None, parcellation = 'schaefer', task = 'rest', n_parcels = 1000, gsr = False, z_transformed = True, save = False, save_to = None)
+    def get_conn_matrix(self, subject, subject_ts = None, parcellation = 'schaefer', task = 'rest', concat_ts = False, n_parcels = 1000, gsr = False, z_transformed = True, save = False, save_to = None):
         """
         Parameters
         ----------
@@ -274,6 +285,8 @@ class FmriPreppedDataSet(RawDataset):
             parcellation to use
         task : str  
             task to use
+        concat_ts : bool
+            whether to compute the connectivity matrix on concatenated time series (e.g., if several sessions available)
         n_parcels : int
             number of parcels to use
         gsr : bool
@@ -293,28 +306,29 @@ class FmriPreppedDataSet(RawDataset):
             subj_ts_array = self.clean_signal(subject, task, parcellation, n_parcels, gsr)
         else:
             subj_ts_array = np.load(subject_ts)
-        
-        conn_matrix = np.zeros((subj_ts_array.shape[0], n_parcels, n_parcels))
-        
-        for i, subj_ts in enumerate(subj_ts_array):
-            conn_matrix[i] = np.corrcoef(subj_ts.T)
+        if concat_ts == True:
+            subj_ts_array = np.row_stack(subj_ts_array)
+            conn_matrix = np.corrcoef(subj_ts_array.T)
             if z_transformed == True:
-                conn_matrix[i] = np.arctanh(conn_matrix[i]) # Fisher's z transform
-                if np.isnan(conn_matrix[i]).any(): # remove nans and infs in the matrix
-                    nan_indices = np.where(np.isnan(conn_matrix[i]))
-                    conn_matrix[i][nan_indices] = .0000000001
-                if np.isinf(conn_matrix[i]).any():
-                    inf_indices = np.where(np.isinf(conn_matrix[i]))
-                    conn_matrix[i][inf_indices] = 1
-        if save == True:
-            if save_to is None:
-                save_to = os.path.join(f'{self.data_path}/sub-{subject}', 'func', f'conn-matrix-sub-{subject}-{parcellation}{n_parcels}.npy')
-            else:
-                save_to = os.path.join(save_to, f'conn-matrix-sub-{subject}-{parcellation}{n_parcels}.npy')
-            np.save(save_to, conn_matrix)
+                conn_matrix = z_transform_conn_matrix(conn_matrix)
+        else:
+            conn_matrix = np.zeros((subj_ts_array.shape[0], n_parcels, n_parcels))
+            for i, subj_ts in enumerate(subj_ts_array):
+                conn_matrix[i] = np.corrcoef(subj_ts.T)
+                if z_transformed == True:
+                    conn_matrix[i] = z_transform_conn_matrix(conn_matrix[i])
+        if save_to is None:
+            save_dir = os.path.join(f'{self.data_path}', 'clean_data', f'sub-{subject}', 'func')
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            save_to = os.path.join(save_dir, f'conn-matrix-sub-{subject}-{parcellation}{n_parcels}.npy')
+        else:
+            save_to = os.path.join(save_to, f'conn-matrix-sub-{subject}-{parcellation}{n_parcels}.npy')
+
+        self.subject_conn_paths[subject] = save_to
+
+        np.save(save_to, conn_matrix)
         return conn_matrix
         
-    
-    
-        
+
     
