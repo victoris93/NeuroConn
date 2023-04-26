@@ -1,14 +1,5 @@
-import nilearn
 import numpy as np
-import pandas as pd
 import os
-import hcp_utils as hcp
-import nibabel as nib
-import json
-from nilearn import datasets
-from nilearn.maskers import NiftiLabelsMasker
-from nilearn import signal
-from sklearn.impute import SimpleImputer
 from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
 from PyConn.data.example_datasets import depression, cobre
 
@@ -68,3 +59,26 @@ def test_clean_signal_shape():
 
     assert clean_ts_depression_no_ses.shape[0] == 1
     assert clean_ts_depression_no_ses.shape[2] == n_parcels
+
+def test_conn_matrix():
+    fmriprepped_cobre = FmriPreppedDataSet(cobre)
+    fmriprepped_depression = FmriPreppedDataSet(depression)
+
+    conn_matrix_cobre_2ses = fmriprepped_cobre.get_conn_matrix(subject = fmriprepped_cobre.subjects[0], task = "rest", save = True)
+    conn_matrix_depression_no_ses = fmriprepped_depression.get_conn_matrix(subject = fmriprepped_depression.subjects[0], task = "rest", save = True)
+    path_conn_matrix_cobre_2ses = os.path.join(f'{fmriprepped_cobre.data_path}', 'clean_data', f'sub-{fmriprepped_cobre.subjects[0]}', 'func', f'conn-matrix-sub-{fmriprepped_cobre.subjects[0]}-schaefer1000.npy')
+
+    path_conn_matrix_depression_no_ses = os.path.join(f'{fmriprepped_depression.data_path}', 'clean_data', f'sub-{fmriprepped_depression.subjects[0]}', 'func', f'conn-matrix-sub-{fmriprepped_depression.subjects[0]}-schaefer1000.npy')
+
+    assert conn_matrix_cobre_2ses.shape[0] == 2
+    assert conn_matrix_cobre_2ses.shape[1] == 1000
+    assert conn_matrix_cobre_2ses.shape[2] == 1000
+
+    assert conn_matrix_depression_no_ses.shape[0] == 1
+    assert conn_matrix_depression_no_ses.shape[1] == 1000
+    assert conn_matrix_depression_no_ses.shape[2] == 1000
+
+    assert os.path.exists(path_conn_matrix_cobre_2ses)
+    assert os.path.exists(path_conn_matrix_depression_no_ses)
+
+    
