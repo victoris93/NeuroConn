@@ -66,9 +66,9 @@ def test_conn_matrix():
 
     conn_matrix_cobre_2ses = fmriprepped_cobre.get_conn_matrix(subject = fmriprepped_cobre.subjects[0], task = "rest", save = True)
     conn_matrix_depression_no_ses = fmriprepped_depression.get_conn_matrix(subject = fmriprepped_depression.subjects[0], task = "rest", save = True)
-    path_conn_matrix_cobre_2ses = os.path.join(f'{fmriprepped_cobre.data_path}', 'clean_data', f'sub-{fmriprepped_cobre.subjects[0]}', 'func', f'conn-matrix-sub-{fmriprepped_cobre.subjects[0]}-schaefer1000.npy')
 
-    path_conn_matrix_depression_no_ses = os.path.join(f'{fmriprepped_depression.data_path}', 'clean_data', f'sub-{fmriprepped_depression.subjects[0]}', 'func', f'conn-matrix-sub-{fmriprepped_depression.subjects[0]}-schaefer1000.npy')
+    path_conn_matrix_cobre_2ses = os.path.join(f'{fmriprepped_cobre.data_path}', 'clean_data', f'sub-{fmriprepped_cobre.subjects[0]}', 'func', f'conn-matrix-sub-{fmriprepped_cobre.subjects[0]}-rest-schaefer1000.npy')
+    path_conn_matrix_depression_no_ses = os.path.join(f'{fmriprepped_depression.data_path}', 'clean_data', f'sub-{fmriprepped_depression.subjects[0]}', 'func', f'conn-matrix-sub-{fmriprepped_depression.subjects[0]}-rest-schaefer1000.npy')
 
     assert conn_matrix_cobre_2ses.shape[0] == 2
     assert conn_matrix_cobre_2ses.shape[1] == 1000
@@ -80,5 +80,3 @@ def test_conn_matrix():
 
     assert os.path.exists(path_conn_matrix_cobre_2ses)
     assert os.path.exists(path_conn_matrix_depression_no_ses)
-
-    
