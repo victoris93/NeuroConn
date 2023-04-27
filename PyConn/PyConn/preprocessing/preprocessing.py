@@ -76,8 +76,9 @@ class FmriPreppedDataSet(RawDataset):
         for subject in self.subjects:
             output_dir =os.path.join(self.data_path,'clean_data', f'sub-{subject}', 'func')
             if os.path.exists(output_dir):
-                conn_mat_paths = [f'{output_dir}/{i}' for i in os.listdir(output_dir) if "conn-matrix" in i][0]
-                self.subject_conn_paths[subject] = conn_mat_paths
+                conn_mat_paths = [f'{output_dir}/{i}' for i in os.listdir(output_dir) if "conn-matrix" in i]
+                if len(conn_mat_paths) != 0:
+                    self.subject_conn_paths[subject] = conn_mat_paths[0]
     def __repr__(self):
         return f'Subjects={self.subjects},\n Data_Path={self.data_path})'
     
@@ -94,7 +95,7 @@ class FmriPreppedDataSet(RawDataset):
                         self.data_path = os.path.join(self.data_path, subdir)
         return self.data_path
     
-    def get_ts_paths(self, subject, task): # needs to be adaptred to multiple sessions
+    def get_ts_paths(self, subject, task): # needs to be adapted to multiple sessions
         #numpy-style docstring
         """
         Parameters
@@ -270,14 +271,16 @@ class FmriPreppedDataSet(RawDataset):
             clean_ts = signal.clean(parc_ts, t_r = 2, low_pass=0.08, high_pass=0.01, standardize=True, detrend=True)
             clean_ts_array.append(clean_ts[10:]) # discarding first 10 volumes
         clean_ts_array = np.array(clean_ts_array)
+        print(clean_ts_array.shape)
         if save == True:
             if save_to is None:
                 save_dir = os.path.join(f'{self.data_path}', 'clean_data', f'sub-{subject}', 'func')
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
-                save_to = os.path.join(f'{self.data_path}/sub-{subject}', 'func', f'clean-ts-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
+                save_to = os.path.join(f'{save_dir}', f'clean-ts-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
             else:
                 save_to = os.path.join(save_to, f'clean-ts-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
+            print(save_to)
             np.save(save_to, clean_ts_array)
         return clean_ts_array
     
