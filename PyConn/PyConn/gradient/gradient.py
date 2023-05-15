@@ -11,6 +11,21 @@ import os
 path_margulies_grads = os.path.join(os.path.dirname(__file__), 'margulies_grads_schaefer1000.npy')
 
 def align_gradients(gradients, custom_ref = None, *args):
+    """
+    Aligns gradients to the Margulies et al. (2016) gradients.
+    Parameters
+    ----------
+    gradients : str or numpy.ndarray
+        The gradients to align.
+    custom_ref : str or numpy.ndarray, optional
+        The reference gradients to align to. The default is None.
+    *args :
+        Additional arguments to pass to ProcrustesAlignment.
+    Returns
+    -------
+    aligned_gradients : numpy.ndarray
+        The aligned gradients.
+    """
     if custom_ref is None:
         path_margulies_grads = os.path.join(os.path.dirname(__file__), 'margulies_grads_schaefer1000.npy')
         ref_gradients = np.load(path_margulies_grads)
@@ -24,9 +39,43 @@ def align_gradients(gradients, custom_ref = None, *args):
     aligned_gradients = np.array(Alignment.fit(gradients, ref_gradients.T).aligned_)
     return aligned_gradients
     
-def get_gradients(data_path, subject, n_components, task, parcellation = 'schaefer', n_parcels = 1000, kernel = 'cosine', approach = 'pca', from_mat = True, aligned = True, save = True, save_to = None):
+def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', n_parcels = 1000, kernel = 'cosine', approach = 'pca', from_mat = True, aligned = True, save = True, save_to = None):
+    """
+    Computes gradients from the subject connectivity matrix.
+    Parameters
+    ----------
+    data : str or FmriPreppedDataSet
+        The path to the data or the FmriPreppedDataSet object.
+    subject : str
+        The subject ID.
+    n_components : int
+        The number of components to extract.
+    task : str
+        The task name. The default is 'rest'.
+    parcellation : str, optional
+        The parcellation name. The default is 'schaefer'.
+    n_parcels : int, optional
+        The number of parcels. The default is 1000.
+    kernel : str, optional
+        The kernel to use. The default is 'cosine'.
+    approach : str, optional
+        The approach to use. The default is 'pca'.
+    from_mat : bool, optional
+        Whether to load the data from a .mat file. The default is True.
+    aligned : bool, optional
+        Whether to align the gradients to the Margulies et al. (2016) gradients. The default is True.
+    save : bool, optional  
+        Whether to save the gradients. The default is True.
+    save_to : str, optional 
+        The path to save the gradients. The default is None.
+    """
     gm = GradientMaps(n_components = n_components, kernel = kernel, approach = approach)
-    fmriprepped_data = FmriPreppedDataSet(data_path)
+    if isinstance(data, FmriPreppedDataSet):
+        fmriprepped_data = data
+    elif isinstance(data, str):
+        fmriprepped_data = FmriPreppedDataSet(data)
+    else:
+        raise ValueError("data must be either a FmriPreppedDataSet object or a string.")
     prefix = ''
     if from_mat:
         input_path = fmriprepped_data.subject_conn_paths[subject]
