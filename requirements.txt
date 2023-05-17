@@ -1,0 +1,9 @@
+jupyter-notebook
+pytest
+nilearn
+numpy
+pandas
+nibabel
+scikit-learn
+brainspace
+gdown
