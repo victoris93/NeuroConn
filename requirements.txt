@@ -1,4 +1,4 @@
-jupyter-notebook
+notebook
 pytest
 nilearn
 numpy
