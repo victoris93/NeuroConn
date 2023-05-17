@@ -7,21 +7,21 @@ setup(
     author='Victoria Shevchenko',
     author_email='shevchenko682@gmail.com',
     packages=find_packages(),
-    url = 'https://github.com/victoris93/PyConn'
+    url='https://github.com/victoris93/PyConn',  # Added comma here
     install_requires=[
         'nilearn',
         'numpy',
         'pandas',
         'scikit-learn',
         'nibabel',
-        'json',
-        'brainspace'
+        'brainspace',
+        'gdown',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3 :: Only'
+        'Programming Language :: Python :: 3'
     ],
     keywords='fmriprep, BIDS, connectivity, gradients, dispersion',
 )
