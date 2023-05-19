@@ -5,9 +5,11 @@ import os
 import nibabel as nib
 import json
 from nilearn import datasets
+import time
 from nilearn.maskers import NiftiLabelsMasker
 from nilearn import signal
 from sklearn.impute import SimpleImputer
+import subprocess as sp
 
 
 def z_transform_conn_matrix(conn_matrix):
@@ -35,6 +37,31 @@ class RawDataset():
         self._data_description = None
         self._subjects = None
 
+    def docker_fmriprep(self, subject, skip_bids_validation = True, fs_license_path = os.path.dirname(__file__) + '/freesurfer_license.txt', fs_reconall = True, mem = 5000, task = 'rest'):
+        data_path = self.BIDS_path
+        fmriprep_path = os.path.join(data_path, 'derivatives', 'fmriprep')
+        skip_bids_validation = '--skip-bids-validation' if skip_bids_validation else ''
+        fs_reconall = '' if fs_reconall else '--fs-no-reconall'
+        if task != None:
+            task = f'--task-id {task}'
+        else:
+            task = ''
+        fmriprep_bash = f"""
+        export PATH="$HOME/.local/bin:$PATH"
+        mkdir -p {fmriprep_path}
+        export FS_LICENSE={fs_license_path}
+        fmriprep-docker {data_path} {fmriprep_path} participant --participant-label {subject} {skip_bids_validation} --fs-license-file $FS_LICENSE {fs_reconall} {task} --stop-on-first-crash --mem_mb {mem} --output-spaces MNI152NLin2009cAsym:res-2 -w $HOME
+        """
+        log_file = f"{self.BIDS_path}/fmriprep_logs_sub-{subject}.txt"
+        with open(log_file, "w") as file:
+            process = sp.Popen(["bash", "-c", fmriprep_bash], stdout=file, stderr=file, universal_newlines=True)
+
+            while process.poll() is None:
+                time.sleep(0.1)
+
+        with open(log_file, "r") as file:
+            print(file.read())
+    
     @property
     def participant_data(self):
         if self._participant_data is None:

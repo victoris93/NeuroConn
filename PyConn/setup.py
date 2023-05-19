@@ -16,6 +16,7 @@ setup(
         'nibabel',
         'brainspace',
         'gdown',
+        'fmriprep-docker', 
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

@@ -1,4 +1,3 @@
-notebook
 pytest
 nilearn
 numpy
