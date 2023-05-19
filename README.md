@@ -4,9 +4,10 @@ PyConn is a Python package that provides a user-friendly interface for post-fmri
 
 ## Features
 
+<font color="red">**NB! If you wish to run `fmriprep` within this package, install Docker Desktop first. Keep it running when you start** `RawDataset.docker_fmriprep()`</font>
 - Preprocessing of fMRI data using the fmriprep pipeline
 - Computation of connectivity matrices and gradients
-- Direct output of gradients or connectivity matrices for any subject
+- Direct output of gradients or connectivity matrices for any subject without specifying preprocessing parameters
 - Handling of BIDS-formatted datasets
 
 ## Installation
@@ -14,14 +15,30 @@ PyConn is a Python package that provides a user-friendly interface for post-fmri
 You can install PyConn using pip: `pip install PyConn`
 
 ## Usage
-
-Here's an example of how to use the `FmriPreppedDataSet` class provided by PyConn:
+**1. fMRIPrep**. The class `RawDataset` features a method to run fmriprep within within your Python environment. Before running it:
+1. Install Docker Desktop.
+2. After having activated your environment, run `pip install fmriprep-docker`.
+3. Start Docker Disktop.
+Then, give this a try:
 
 ```
 from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
+from PyConn.data.example_datasets import fetch_example_data
+ex_data = fetch_example_data()
+data = RawDataset(ex_data)
+subject = '17017'
+data.docker_fmriprep(subject, fs_reconall = False)
+```
+
+**2. Post-fMRIPrep** Here's an example of how to use the `FmriPreppedDataSet` class provided by PyConn:
+
+```
+from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
+from PyConn.data.example_datasets import fetch_example_data
 
 # Initialize the dataset object
-dataset = FmriPreppedDataSet(BIDS_path)
+ex_data = fetch_example_data()
+dataset = FmriPreppedDataSet(example_data)
 
 # Access information about the dataset
 print(dataset)
@@ -36,14 +53,6 @@ conn_matrix = dataset.get_conn_matrix(subject, subject_ts=ts_paths, parcellation
 gradients = dataset.compute_gradients(subject, subject_ts=ts_paths, task='rest')
 ```
 
-if you don't have a dataset, use the example dataset:
-
-```
-from PyConn.data.example_datasets import fetch_example_data
-from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
-example_data = fetch_example_data()
-dataset = FmriPreppedDataSet(BIDS_path)
-```
 For more detailed information and examples, please refer to the notebook.
 
 ## Contributing
