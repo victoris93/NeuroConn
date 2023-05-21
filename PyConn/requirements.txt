@@ -5,3 +5,4 @@ nibabel
 scikit-learn
 brainspace
 gdown
+fmriprep-docker

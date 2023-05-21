@@ -12,18 +12,20 @@ path_margulies_grads = os.path.join(os.path.dirname(__file__), 'margulies_grads_
 
 def align_gradients(gradients, custom_ref = None, *args):
     """
-    Aligns gradients to the Margulies et al. (2016) gradients.
+    Aligns gradients to a reference set of gradients using Procrustes alignment.
+
     Parameters
     ----------
     gradients : str or numpy.ndarray
         The gradients to align.
     custom_ref : str or numpy.ndarray, optional
-        The reference gradients to align to. The default is None.
+        The reference gradients to align to. If None, the default Margulies et al. (2016) gradients will be used. Default is None.
     *args :
         Additional arguments to pass to ProcrustesAlignment.
+
     Returns
     -------
-    aligned_gradients : numpy.ndarray
+    numpy.ndarray
         The aligned gradients.
     """
     if custom_ref is None:
@@ -42,6 +44,7 @@ def align_gradients(gradients, custom_ref = None, *args):
 def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', n_parcels = 1000, kernel = 'cosine', approach = 'pca', from_mat = True, aligned = True, save = True, save_to = None):
     """
     Computes gradients from the subject connectivity matrix.
+
     Parameters
     ----------
     data : str or FmriPreppedDataSet
@@ -50,24 +53,29 @@ def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', 
         The subject ID.
     n_components : int
         The number of components to extract.
-    task : str
-        The task name. The default is 'rest'.
+    task : str, optional
+        The task name. Default is 'rest'.
     parcellation : str, optional
-        The parcellation name. The default is 'schaefer'.
+        The parcellation name. Default is 'schaefer'.
     n_parcels : int, optional
-        The number of parcels. The default is 1000.
+        The number of parcels. Default is 1000.
     kernel : str, optional
-        The kernel to use. The default is 'cosine'.
+        The kernel to use. Default is 'cosine'.
     approach : str, optional
-        The approach to use. The default is 'pca'.
+        The approach to use. Default is 'pca'.
     from_mat : bool, optional
-        Whether to load the data from a .mat file. The default is True.
+        Whether to load the data from a .mat file. Default is True.
     aligned : bool, optional
-        Whether to align the gradients to the Margulies et al. (2016) gradients. The default is True.
+        Whether to align the gradients to the Margulies et al. (2016) gradients. Default is True.
     save : bool, optional  
-        Whether to save the gradients. The default is True.
+        Whether to save the gradients. Default is True.
     save_to : str, optional 
-        The path to save the gradients. The default is None.
+        The path to save the gradients. Default is None.
+
+    Returns
+    -------
+    numpy.ndarray
+        The computed gradients.
     """
     gm = GradientMaps(n_components = n_components, kernel = kernel, approach = approach)
     if isinstance(data, FmriPreppedDataSet):

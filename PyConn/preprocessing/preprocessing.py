@@ -13,6 +13,19 @@ import subprocess as sp
 
 
 def z_transform_conn_matrix(conn_matrix):
+    """
+    Applies Fisher's z transform to a connectivity matrix.
+
+    Parameters
+    ----------
+    conn_matrix : numpy.ndarray
+        The connectivity matrix to transform.
+
+    Returns
+    -------
+    numpy.ndarray
+        The transformed connectivity matrix.
+    """
     conn_matrix = np.arctanh(conn_matrix) # Fisher's z transform
     if np.isnan(conn_matrix).any(): # remove nans and infs in the matrix
         nan_indices = np.where(np.isnan(conn_matrix))
@@ -37,7 +50,29 @@ class RawDataset():
         self._data_description = None
         self._subjects = None
 
-    def docker_fmriprep(self, subject, skip_bids_validation = True, fs_license_path = os.path.dirname(__file__) + '/freesurfer_license.txt', fs_reconall = True, mem = 5000, task = 'rest'):
+    def docker_fmriprep(self, subject, fs_license_path, skip_bids_validation = True, fs_reconall = True, mem = 5000, task = 'rest'):
+        """
+        Runs the fMRIprep pipeline in a Docker container for a given subject.
+
+        Parameters
+        ----------
+        subject : str
+            The label of the participant to process.
+        skip_bids_validation : bool, optional
+            Whether to skip BIDS validation. Default is True.
+        fs_license_path : str, optional
+            The path to the (full) FreeSurfer license file
+        fs_reconall : bool, optional
+            Whether to run FreeSurfer's recon-all. Default is True.
+        mem : int, optional
+            The amount of memory to allocate to the Docker container, in MB. Default is 5000.
+        task : str, optional
+            The ID of the task to preprocess, or None to preprocess all tasks. Default is 'rest'.
+
+        Returns
+        -------
+        None
+        """
         data_path = self.BIDS_path
         fmriprep_path = os.path.join(data_path, 'derivatives', 'fmriprep')
         skip_bids_validation = '--skip-bids-validation' if skip_bids_validation else ''
@@ -110,7 +145,14 @@ class FmriPreppedDataSet(RawDataset):
         return f'Subjects={self.subjects},\n Data_Path={self.data_path})'
     
     def _find_sub_dirs(self):
-        """Finds the sub-directories in the derivatives folder if they exist."""
+        """
+        Finds the subdirectory containing the subject data.
+
+        Returns
+        -------
+        str
+            The path to the subdirectory containing the subject data.
+        """
         path_not_found = True
         while path_not_found:
             subdirs = os.listdir(self.data_path)
@@ -151,6 +193,19 @@ class FmriPreppedDataSet(RawDataset):
         return ts_paths
     
     def get_sessions(self, subject):
+        """
+        Returns a list of session names for a given subject. If the subject has no sessions, an empty list is returned.
+
+        Parameters
+        ----------
+        subject : str
+            The label of the subject to retrieve session names for.
+
+        Returns
+        -------
+        list of str
+            A list of session names for the given subject.
+        """
         subject_dir = f'{self.data_path}/sub-{subject}'
         subdirs = os.listdir(subject_dir)
         session_names = []
@@ -183,19 +238,22 @@ class FmriPreppedDataSet(RawDataset):
     
     def get_confounds(self, subject, task, no_nans = True, pick_confounds = None):
         """
+        Returns a list of confounds for a given subject and task.
+
         Parameters
         ----------
         subject : str
-            The subject ID.
+            The ID of the subject.
         task : str
-            The task name.
-        no_nans : bool
-            Whether to impute NaNs in the confounds.
-        pick_confounds : list or numpy.ndarray
-            The confounds to be picked from the dataframe.
+            The name of the task.
+        no_nans : bool, optional
+            Whether to impute NaNs in the confounds. Default is True.
+        pick_confounds : list or numpy.ndarray, optional
+            The confounds to be picked from the dataframe. If None, the default confounds will be used. Default is None.
+
         Returns
         -------
-        confound_list : list
+        list
             A list of confounds.
         """
         if pick_confounds == None:
@@ -271,26 +329,29 @@ class FmriPreppedDataSet(RawDataset):
     
     def clean_signal(self, subject, task="rest", parcellation='schaefer', n_parcels=1000, gsr=False, save = False, save_to = None): # add a save option + path
         """
+        Cleans the time series for a given subject using a specified parcellation.
+
         Parameters
         ----------
         subject : str
-            subject id
-        task : str
-            task to use
-        parcellation : str
-            parcellation to use
-        n_parcels : int
-            number of parcels to use
-        gsr : bool
-            whether to use global signal regression
-        save : bool
-            whether to save the cleaned time series
-        save_to : str   
-            path to save the cleaned time series
+            The ID of the subject to clean the time series for.
+        task : str, optional
+            The name of the task to use. Default is 'rest'.
+        parcellation : str, optional
+            The name of the parcellation to use. Default is 'schaefer'.
+        n_parcels : int, optional
+            The number of parcels to use. Default is 1000.
+        gsr : bool, optional
+            Whether to use global signal regression. Default is False.
+        save : bool, optional
+            Whether to save the cleaned time series. Default is False.
+        save_to : str, optional
+            The path to save the cleaned time series. If None, the time series will be saved to the default directory. Default is None.
+
         Returns
         -------
-        clean_ts_array : np.array 
-            cleaned time series
+        np.ndarray
+            The cleaned time series of shape (n_sessions, n_parcels, n_volumes).
         """
         parc_ts_list = self.parcellate(subject, parcellation, task, n_parcels, gsr)
         clean_ts_array =[]
@@ -313,32 +374,35 @@ class FmriPreppedDataSet(RawDataset):
     
     def get_conn_matrix(self, subject, subject_ts = None, parcellation = 'schaefer', task = 'rest', concat_ts = False, n_parcels = 1000, gsr = False, z_transformed = True, save = False, save_to = None):
         """
+        Computes the connectivity matrix for a given subject.
+
         Parameters
         ----------
         subject : str
-            subject id
-        subject_ts : str
-            path to the cleaned time series
-        parcellation : str
-            parcellation to use
-        task : str  
-            task to use
-        concat_ts : bool
-            whether to compute the connectivity matrix on concatenated time series (e.g., if several sessions available)
-        n_parcels : int
-            number of parcels to use
-        gsr : bool
-            whether to use global signal regression
-        z_transformed : bool
-            whether to z transform the connectivity matrix
-        save : bool
-            whether to save the connectivity matrix
-        save_to : str
-            path to save the connectivity matrix
+            The ID of the subject to compute the connectivity matrix for.
+        subject_ts : str, optional
+            The path to the cleaned time series. If None, the time series will be cleaned using the `clean_signal` method. Default is None.
+        parcellation : str, optional
+            The name of the parcellation to use. Default is 'schaefer'.
+        task : str, optional
+            The name of the task to use. Default is 'rest'.
+        concat_ts : bool, optional
+            Whether to compute the connectivity matrix on concatenated time series (e.g., if several sessions available). Default is False.
+        n_parcels : int, optional
+            The number of parcels to use. Default is 1000.
+        gsr : bool, optional
+            Whether to use global signal regression. Default is False.
+        z_transformed : bool, optional
+            Whether to apply Fisher's z transform to the connectivity matrix. Default is True.
+        save : bool, optional
+            Whether to save the connectivity matrix. Default is False.
+        save_to : str, optional
+            The path to save the connectivity matrix. If None, the matrix will be saved to the default directory. Default is None.
+
         Returns
         -------
-        conn_matrix : np.array  
-            connectivity matrix of shape (n_sessions, n_parcels, n_parcels)
+        np.ndarray
+            The connectivity matrix of shape (n_sessions, n_parcels, n_parcels).
         """
         if subject_ts is None:
             subj_ts_array = self.clean_signal(subject, task, parcellation, n_parcels, gsr)
