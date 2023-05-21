@@ -16,9 +16,10 @@ You can install PyConn using pip: `pip install PyConn`
 
 ## Usage
 **1. fMRIPrep**. The class `RawDataset` features a method to run fmriprep within within your Python environment. Before running it:
-1. Install Docker Desktop.
-2. After having activated your environment, run `pip install fmriprep-docker`.
-3. Start Docker Disktop.
+1. Register with freesurfer and download the license file `freesurfer_license.txt`)
+2. Install Docker Desktop.
+3. After having activated your environment, run `pip install fmriprep-docker`.
+4. Start Docker Disktop.
 Then, give this a try:
 
 ```
@@ -27,7 +28,7 @@ from PyConn.data.example_datasets import fetch_example_data
 ex_data = fetch_example_data()
 data = RawDataset(ex_data)
 subject = '17017'
-data.docker_fmriprep(subject, fs_reconall = False)
+data.docker_fmriprep(subject, fs_reconall = False, fs_license = <path_to_freesurfer_license.txt>)
 ```
 
 **2. Post-fMRIPrep** Here's an example of how to use the `FmriPreppedDataSet` class provided by PyConn:
