@@ -18,6 +18,8 @@ def align_gradients(gradients, n_components, custom_ref = None, *args):
     ----------
     gradients : str or numpy.ndarray
         The gradients to align.
+    n_components : int
+        The number of components to use from the reference gradients.   
     custom_ref : str or numpy.ndarray, optional
         The reference gradients to align to. If None, the default Margulies et al. (2016) gradients will be used. Default is None.
     *args :
