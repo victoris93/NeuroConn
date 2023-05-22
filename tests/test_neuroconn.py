@@ -1,8 +1,8 @@
 import numpy as np
 import os
-from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
-from PyConn.data.example_datasets import fetch_example_data
-from PyConn.gradient.gradient import get_gradients
+from NeuroConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
+from NeuroConn.data.example_datasets import fetch_example_data
+from NeuroConn.gradient.gradient import get_gradients
 
 example_data = fetch_example_data('https://drive.google.com/file/d/1XjF5wDJXHzMyfoAjQE6NW2xcj9PulZzH/view?usp=share_link')
 

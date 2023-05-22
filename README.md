@@ -1,6 +1,6 @@
-# PyConn
+# NeuroConn
 
-PyConn is a Python package that provides a user-friendly interface for post-fmriprep preprocessing and computing connectivity matrices and gradients. It is designed as a BIDS application, allowing easy integration with BIDS-formatted datasets.
+NeuroConn is a Python package that provides a user-friendly interface for post-fmriprep preprocessing and computing connectivity matrices and gradients. It is designed as a BIDS application, allowing easy integration with BIDS-formatted datasets.
 
 ## Features
 
@@ -12,7 +12,7 @@ PyConn is a Python package that provides a user-friendly interface for post-fmri
 
 ## Installation
 
-You can install PyConn using pip: `pip install PyConn`
+You can install NeuroConn using pip: `pip install NeuroConn`
 
 ## Usage
 **1. fMRIPrep**. The class `RawDataset` features a method to run fmriprep within within your Python environment. Before running it:
@@ -23,38 +23,33 @@ You can install PyConn using pip: `pip install PyConn`
 Then, give this a try:
 
 ```
-from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
-from PyConn.data.example_datasets import fetch_example_data
+from NeuroConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
+from NeuroConn.data.example_datasets import fetch_example_data
 ex_data = fetch_example_data()
 data = RawDataset(ex_data)
-subject = '17017'
+subject = '52'
 data.docker_fmriprep(subject, fs_reconall = False, fs_license = <path_to_freesurfer_license.txt>)
 ```
 
-**2. Post-fMRIPrep** Here's an example of how to use the `FmriPreppedDataSet` class provided by PyConn:
+**2. Post-fMRIPrep** Here's an example of how to use the `FmriPreppedDataSet` class provided by NeuroConn:
 
 ```
-from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
-from PyConn.data.example_datasets import fetch_example_data
+from NeuroConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
+from NeuroConn.data.example_datasets import fetch_example_data
 
 # Initialize the dataset object
-ex_data = fetch_example_data()
+ex_data = fetch_example_data() # from https://openneuro.org/datasets/ds002748
 dataset = FmriPreppedDataSet(example_data)
 
-# Access information about the dataset
-print(dataset)
-
-# Get the paths to the time series files for a subject and task
-ts_paths = dataset.get_ts_paths(subject, task)
-
 # Compute connectivity matrices for a subject
-conn_matrix = dataset.get_conn_matrix(subject, subject_ts=ts_paths, parcellation='schaefer', task='rest', n_parcels=1000)
+conn_matrix = data_prepped.get_conn_matrix(subject, parcellation='schaefer', task='rest', n_parcels=1000, save = True)
+
 
 # Compute gradients for a subject
-gradients = dataset.compute_gradients(subject, subject_ts=ts_paths, task='rest')
+gradients = get_gradients(data_prepped,subject, task='rest', n_components = 10, approach = "pca")
 ```
 
-For more detailed information and examples, please refer to the notebook.
+For more detailed information and examples, please refer to the [notebook](https://github.com/victoris93/NeuroConn/blob/master/NeuroConn.ipynb).
 
 ## Contributing
 
@@ -62,4 +57,10 @@ Contributions are welcome! If you find any issues or have suggestions for improv
 
 ## License
 
-PyConn is released under the MIT License. See the LICENSE file for more details.
+NeuroConn is released under the MIT License. See the LICENSE file for more details.
+
+## Example Data
+
+Bezmaternykh D.D., Melnikov M.Y., Savelov A.A. et al. Brain Networks Connectivity in Mild to Moderate Depression: Resting State fMRI Study with Implications to Nonpharmacological Treatment. Neural Plasticity, 2021. V. 2021. № 8846097. PP. 1-15. DOI: 10.1155/2021/8846097
+
+
