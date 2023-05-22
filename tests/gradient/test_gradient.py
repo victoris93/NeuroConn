@@ -1,7 +1,7 @@
 from PyConn.gradient.gradient import get_gradients
 from PyConn.data.example_datasets import fetch_example_data
 
-example_data = fetch_example_data()
+example_data = fetch_example_data('https://drive.google.com/file/d/1XjF5wDJXHzMyfoAjQE6NW2xcj9PulZzH/view?usp=share_link')
 
 def test_get_gradients():
     gradients = get_gradients(example_data, '52', n_components = 10, task = "rest", aligned = False)

@@ -5,7 +5,7 @@ import zipfile
 output = 'example_data'
 url = 'https://drive.google.com/file/d/1ijrYstMmsjMmQcM9ThoVf_dMYl9GFcv6/view?usp=share_link'
 
-def unzip_and_delete(file_path, dir_name = output, output_dir = os.path.dirname(__file__)):
+def unzip_and_delete(file_path, output_dir, dir_name = output):
 	"""
     Extracts the contents of a zip file to a specified directory and deletes the zip file.
 
@@ -33,7 +33,7 @@ def unzip_and_delete(file_path, dir_name = output, output_dir = os.path.dirname(
 	os.system(f'rm {file_path}')
 	print("Data extracted.")
 
-def fetch_example_data(gdrive_url = url, output_name = output):
+def fetch_example_data(gdrive_url = url, output_name = output, output_dir = os.path.dirname(__file__)):
 	"""
 	Downloads and extracts example data from a Google Drive URL.
 
@@ -49,12 +49,12 @@ def fetch_example_data(gdrive_url = url, output_name = output):
 	str
 		The path to the downloaded data.
 	"""
-	data_path = os.path.join(os.path.dirname(__file__), output_name)
+	data_path = os.path.join(output_dir, output_name)
 	if os.path.exists(data_path):
 		print("Data already downloaded.")
 	else:
 		print("Downloading data...")
 		gdown.download(gdrive_url, data_path + '.zip', quiet=False, fuzzy = True)
-		unzip_and_delete(data_path + '.zip')
+		unzip_and_delete(data_path + '.zip', output_dir = output_dir)
 		print("Data downloaded.")
 	return data_path

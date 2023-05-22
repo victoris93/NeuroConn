@@ -3,7 +3,7 @@ import os
 from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
 from PyConn.data.example_datasets import fetch_example_data
 
-example_data = fetch_example_data()
+example_data = fetch_example_data('https://drive.google.com/file/d/1XjF5wDJXHzMyfoAjQE6NW2xcj9PulZzH/view?usp=share_link')
 
 def test_subjects_attr():
     raw_data = RawDataset(example_data)
@@ -34,7 +34,7 @@ def test_conn_matrix():
     subject = '52'
     fmriprepped_data = FmriPreppedDataSet(example_data)
     conn_matrix = fmriprepped_data.get_conn_matrix(subject, task = "rest", save = True)
-    path_conn_matrix = os.path.join(f'{fmriprepped_data.data_path}', 'clean_data', f'sub-{subject}', 'func', f'conn-matrix-sub-{fmriprepped_data.subjects[0]}-rest-schaefer1000.npy')
+    path_conn_matrix = os.path.join(f'{fmriprepped_data.data_path}', 'clean_data', f'sub-{subject}', 'func', f'conn-matrix-sub-{subject}-rest-schaefer1000.npy')
 
     assert conn_matrix.shape[0] == 1, "First dimension should be 2 (n_sessions)"
     assert conn_matrix.shape[1] == 1000, "Second dimension should be 1000 (n_parcels)"
