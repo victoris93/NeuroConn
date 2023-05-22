@@ -1,5 +1,5 @@
-PyConn
-======
+NeuroConn
+=========
 
 .. toctree::
    :maxdepth: 4
