@@ -1,6 +1,6 @@
 # NeuroConn
 
-NeuroConn is a Python package that provides a user-friendly interface for post-fmriprep preprocessing and computing connectivity matrices and gradients. It is designed as a BIDS application, allowing easy integration with BIDS-formatted datasets.
+NeuroConn is a Python package that provides a user-friendly interface for fMRI preprocessing and computing connectivity matrices and gradients. It is designed as a BIDS application, allowing easy integration with BIDS-formatted datasets.
 
 ## Features
 
@@ -19,7 +19,7 @@ You can install NeuroConn using pip: `pip install NeuroConn`
 1. Register with freesurfer and download the license file `freesurfer_license.txt`)
 2. Install Docker Desktop.
 3. After having activated your environment, run `pip install fmriprep-docker`.
-4. Start Docker Disktop.
+4. Start Docker Desktop.
 Then, give this a try:
 
 ```
@@ -41,15 +41,14 @@ from NeuroConn.data.example_datasets import fetch_example_data
 ex_data = fetch_example_data() # from https://openneuro.org/datasets/ds002748
 dataset = FmriPreppedDataSet(example_data)
 
-# Compute connectivity matrices for a subject
+# Compute connectivity matrix
 conn_matrix = data_prepped.get_conn_matrix(subject, parcellation='schaefer', task='rest', n_parcels=1000, save = True)
 
-
-# Compute gradients for a subject
+# Compute 10 gradients (Margulies et al., 2016)
 gradients = get_gradients(data_prepped,subject, task='rest', n_components = 10, approach = "pca")
 ```
 
-For more detailed information and examples, please refer to the [notebook](https://github.com/victoris93/NeuroConn/blob/master/NeuroConn.ipynb).
+For more detailed information and examples, please refer to the [notebook](https://github.com/victoris93/PyConn/blob/master/NeuroConn.ipynb).
 
 ## Contributing
 

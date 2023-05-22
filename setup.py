@@ -1,14 +1,19 @@
 from setuptools import setup, find_packages
 
+with open('README.md', 'r') as f:
+    long_description = f.read()
+
 setup(
-    name='PyConn',
-    version='0.1.0a1',
+    name='NeuroConn',
+    version='0.1.0a5',
     description='A BIDS toolbox for connectivity & gradient analyses.',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Victoria Shevchenko',
     author_email='shevchenko682@gmail.com',
     python_requires='>=3.6',
     packages=find_packages(),
-    url='https://github.com/victoris93/PyConn',  # Added comma here
+    url='https://github.com/victoris93/NeuroConn',  # Added comma here
     install_requires=[
         'nilearn',
         'numpy',
