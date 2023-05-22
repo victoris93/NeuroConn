@@ -26,7 +26,7 @@ Then, give this a try:
 ```
 from NeuroConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
 from NeuroConn.data.example_datasets import fetch_example_data
-ex_data = fetch_example_data()
+ex_data = fetch_example_data() # from https://openneuro.org/datasets/ds002748
 data = RawDataset(ex_data)
 subject = '52'
 data.docker_fmriprep(subject, fs_reconall = False, fs_license = <path_to_freesurfer_license.txt>)
@@ -38,8 +38,9 @@ data.docker_fmriprep(subject, fs_reconall = False, fs_license = <path_to_freesur
 from NeuroConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
 from NeuroConn.data.example_datasets import fetch_example_data
 
-# Initialize the dataset object
-ex_data = fetch_example_data() # from https://openneuro.org/datasets/ds002748
+# Download the dataset preprocessed with fMRIPrep
+example_data = fetch_example_data('https://drive.google.com/file/d/1XjF5wDJXHzMyfoAjQE6NW2xcj9PulZzH/view?usp=share_link') 
+# Initialize the dataset object 
 dataset = FmriPreppedDataSet(example_data)
 
 # Compute connectivity matrix
