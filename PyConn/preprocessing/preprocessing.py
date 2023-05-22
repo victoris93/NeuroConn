@@ -87,7 +87,9 @@ class RawDataset():
         export FS_LICENSE={fs_license_path}
         fmriprep-docker {data_path} {fmriprep_path} participant --participant-label {subject} {skip_bids_validation} --fs-license-file $FS_LICENSE {fs_reconall} {task} --stop-on-first-crash --mem_mb {mem} --output-spaces MNI152NLin2009cAsym:res-2 -w $HOME
         """
-        log_file = f"{self.BIDS_path}/fmriprep_logs_sub-{subject}.txt"
+        if not os.path.exists(f"{self.BIDS_path}/fmriprep_logs"):
+            os.makedirs(f"{self.BIDS_path}/fmriprep_logs")
+        log_file = f"{self.BIDS_path}/fmriprep_logs/fmriprep_logs_sub-{subject}.txt"
         with open(log_file, "w") as file:
             process = sp.Popen(["bash", "-c", fmriprep_bash], stdout=file, stderr=file, universal_newlines=True)
 
@@ -155,7 +157,13 @@ class FmriPreppedDataSet(RawDataset):
         """
         path_not_found = True
         while path_not_found:
-            subdirs = os.listdir(self.data_path)
+            try:
+                subdirs = os.listdir(self.data_path)
+            except FileNotFoundError as e:
+                if e.filename == self.data_path and e.strerror == 'No such file or directory':
+                    raise FileNotFoundError("The data have not been preprocessed with fmriprep: no 'derivatives' directory found.")
+                else:
+                    raise e
             for subdir in subdirs:
                 if any(subdir.startswith('sub-') for subdir in subdirs):
                         path_not_found = False

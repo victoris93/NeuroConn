@@ -10,7 +10,7 @@ import os
 
 path_margulies_grads = os.path.join(os.path.dirname(__file__), 'margulies_grads_schaefer1000.npy')
 
-def align_gradients(gradients, custom_ref = None, *args):
+def align_gradients(gradients, n_components, custom_ref = None, *args):
     """
     Aligns gradients to a reference set of gradients using Procrustes alignment.
 
@@ -30,7 +30,7 @@ def align_gradients(gradients, custom_ref = None, *args):
     """
     if custom_ref is None:
         path_margulies_grads = os.path.join(os.path.dirname(__file__), 'margulies_grads_schaefer1000.npy')
-        ref_gradients = np.load(path_margulies_grads)
+        ref_gradients = np.load(path_margulies_grads)[:n_components]
     else:
         ref_gradients = np.load(custom_ref)
     if isinstance(gradients, str):
@@ -99,7 +99,7 @@ def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', 
         gm.fit(input_data)
         gradients = gm.gradients_
     if aligned:
-        gradients = align_gradients(gradients)
+        gradients = align_gradients(gradients, n_components)
         prefix = "aligned-"
     if save:
         if save_to is None:
