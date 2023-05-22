@@ -1,0 +1,21 @@
+NeuroConn.data package
+======================
+
+Submodules
+----------
+
+NeuroConn.data.example\_datasets module
+---------------------------------------
+
+.. automodule:: NeuroConn.data.example_datasets
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: NeuroConn.data
+   :members:
+   :undoc-members:
+   :show-inheritance:

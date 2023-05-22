@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html  lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>NeuroConn.gradient.gradient</title>
+    
+          <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+          <link rel="stylesheet" href="../../../_static/theme.css " type="text/css" />
+      
+      <!-- sphinx script_files -->
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+
+      
+      <!-- bundled in js (rollup iife) -->
+      <!-- <script src="../../../_static/theme-vendors.js"></script> -->
+      <script src="../../../_static/theme.js" defer></script>
+    
+  <link rel="index" title="Index" href="../../../genindex.html" />
+  <link rel="search" title="Search" href="../../../search.html" /> 
+  </head>
+
+  <body>
+    <div id="app">
+    <div class="theme-container" :class="pageClasses"><navbar @toggle-sidebar="toggleSidebar">
+  <router-link to="../../../index.html" class="home-link">
+    
+      <span class="site-name">NeuroConn</span>
+    
+  </router-link>
+
+  <div class="links">
+    <navlinks class="can-hide">
+
+
+
+  
+    <div class="nav-item">
+      <a href="https://github.com/victoris93/NeuroConn"
+        class="nav-link external">
+          GitHub <outboundlink></outboundlink>
+      </a>
+    </div>
+  
+
+    </navlinks>
+  </div>
+</navbar>
+
+      
+      <div class="sidebar-mask" @click="toggleSidebar(false)">
+      </div>
+        <sidebar @toggle-sidebar="toggleSidebar">
+          
+          <navlinks>
+            
+
+
+
+  
+    <div class="nav-item">
+      <a href="https://github.com/victoris93/NeuroConn"
+        class="nav-link external">
+          GitHub <outboundlink></outboundlink>
+      </a>
+    </div>
+  
+
+            
+          </navlinks><div id="searchbox" class="searchbox" role="search">
+  <div class="caption"><span class="caption-text">Quick search</span>
+    <div class="searchformwrapper">
+      <form class="search" action="../../../search.html" method="get">
+        <input type="text" name="q" />
+        <input type="submit" value="Search" />
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div><div class="sidebar-links" role="navigation" aria-label="main navigation">
+  
+    <div class="sidebar-group">
+      <p class="caption">
+        <span class="caption-text"><a href="../../../modules.html#pyconn">pyconn</a></span>
+      </p>
+      <ul class="">
+        
+          <li class="toctree-l1 ">
+            
+              <a href="../../../NeuroConn.html" class="reference internal ">NeuroConn package</a>
+            
+
+            
+          </li>
+
+        
+      </ul>
+    </div>
+  
+</div>
+        </sidebar>
+
+      <page>
+          <div class="body-header" role="navigation" aria-label="navigation">
+  
+  <ul class="breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+    
+      <li><a href="../../index.html">Module code</a> &raquo;</li>
+    
+    <li>NeuroConn.gradient.gradient</li>
+  </ul>
+  
+
+  <ul class="page-nav">
+</ul>
+  
+</div>
+<hr>
+          <div class="content" role="main" v-pre>
+            
+  <h1>Source code for NeuroConn.gradient.gradient</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">brainspace</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">brainspace.gradient</span> <span class="kn">import</span> <span class="n">GradientMaps</span>
+<span class="kn">from</span> <span class="nn">brainspace.gradient.alignment</span> <span class="kn">import</span> <span class="n">ProcrustesAlignment</span>
+<span class="kn">from</span> <span class="nn">brainspace.utils.parcellation</span> <span class="kn">import</span> <span class="n">map_to_labels</span>
+<span class="kn">from</span> <span class="nn">brainspace.datasets</span> <span class="kn">import</span> <span class="n">load_parcellation</span>
+<span class="kn">from</span> <span class="nn">..preprocessing.preprocessing</span> <span class="kn">import</span> <span class="n">FmriPreppedDataSet</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<span class="n">path_margulies_grads</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;margulies_grads_schaefer1000.npy&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="align_gradients"><a class="viewcode-back" href="../../../NeuroConn.gradient.html#NeuroConn.gradient.gradient.align_gradients">[docs]</a><span class="k">def</span> <span class="nf">align_gradients</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">custom_ref</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Aligns gradients to a reference set of gradients using Procrustes alignment.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gradients : str or numpy.ndarray</span>
+<span class="sd">        The gradients to align.</span>
+<span class="sd">    n_components : int</span>
+<span class="sd">        The number of components to use from the reference gradients.   </span>
+<span class="sd">    custom_ref : str or numpy.ndarray, optional</span>
+<span class="sd">        The reference gradients to align to. If None, the default Margulies et al. (2016) gradients will be used. Default is None.</span>
+<span class="sd">    *args :</span>
+<span class="sd">        Additional arguments to pass to ProcrustesAlignment.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        The aligned gradients.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">custom_ref</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">path_margulies_grads</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s1">&#39;margulies_grads_schaefer1000.npy&#39;</span><span class="p">)</span>
+        <span class="n">ref_gradients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path_margulies_grads</span><span class="p">)[:</span><span class="n">n_components</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ref_gradients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">custom_ref</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">gradients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">gradients</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gradients</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">gradients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">Alignment</span> <span class="o">=</span> <span class="n">ProcrustesAlignment</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">aligned_gradients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">Alignment</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">ref_gradients</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">aligned_</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">aligned_gradients</span></div>
+    
+<div class="viewcode-block" id="get_gradients"><a class="viewcode-back" href="../../../NeuroConn.gradient.html#NeuroConn.gradient.gradient.get_gradients">[docs]</a><span class="k">def</span> <span class="nf">get_gradients</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">parcellation</span> <span class="o">=</span> <span class="s1">&#39;schaefer&#39;</span><span class="p">,</span> <span class="n">n_parcels</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">kernel</span> <span class="o">=</span> <span class="s1">&#39;cosine&#39;</span><span class="p">,</span> <span class="n">approach</span> <span class="o">=</span> <span class="s1">&#39;pca&#39;</span><span class="p">,</span> <span class="n">from_mat</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">aligned</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">save</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">save_to</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes gradients from the subject connectivity matrix.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : str or FmriPreppedDataSet</span>
+<span class="sd">        The path to the data or the FmriPreppedDataSet object.</span>
+<span class="sd">    subject : str</span>
+<span class="sd">        The subject ID.</span>
+<span class="sd">    n_components : int</span>
+<span class="sd">        The number of components to extract.</span>
+<span class="sd">    task : str, optional</span>
+<span class="sd">        The task name. Default is &#39;rest&#39;.</span>
+<span class="sd">    parcellation : str, optional</span>
+<span class="sd">        The parcellation name. Default is &#39;schaefer&#39;.</span>
+<span class="sd">    n_parcels : int, optional</span>
+<span class="sd">        The number of parcels. Default is 1000.</span>
+<span class="sd">    kernel : str, optional</span>
+<span class="sd">        The kernel to use. Default is &#39;cosine&#39;.</span>
+<span class="sd">    approach : str, optional</span>
+<span class="sd">        The approach to use. Default is &#39;pca&#39;.</span>
+<span class="sd">    from_mat : bool, optional</span>
+<span class="sd">        Whether to load the data from a .mat file. Default is True.</span>
+<span class="sd">    aligned : bool, optional</span>
+<span class="sd">        Whether to align the gradients to the Margulies et al. (2016) gradients. Default is True.</span>
+<span class="sd">    save : bool, optional  </span>
+<span class="sd">        Whether to save the gradients. Default is True.</span>
+<span class="sd">    save_to : str, optional </span>
+<span class="sd">        The path to save the gradients. Default is None.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        The computed gradients.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">gm</span> <span class="o">=</span> <span class="n">GradientMaps</span><span class="p">(</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">approach</span> <span class="o">=</span> <span class="n">approach</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">FmriPreppedDataSet</span><span class="p">):</span>
+        <span class="n">fmriprepped_data</span> <span class="o">=</span> <span class="n">data</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">fmriprepped_data</span> <span class="o">=</span> <span class="n">FmriPreppedDataSet</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;data must be either a FmriPreppedDataSet object or a string.&quot;</span><span class="p">)</span>
+    <span class="n">prefix</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">if</span> <span class="n">from_mat</span><span class="p">:</span>
+        <span class="n">input_path</span> <span class="o">=</span> <span class="n">fmriprepped_data</span><span class="o">.</span><span class="n">subject_conn_paths</span><span class="p">[</span><span class="n">subject</span><span class="p">]</span>
+    <span class="n">input_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="n">gradients</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">input_data</span><span class="p">:</span>
+            <span class="n">gm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="n">gradients</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">gm</span><span class="o">.</span><span class="n">gradients_</span><span class="p">)</span>
+            <span class="n">gm</span> <span class="o">=</span> <span class="n">GradientMaps</span><span class="p">(</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">approach</span> <span class="o">=</span> <span class="n">approach</span><span class="p">)</span>
+        <span class="n">gradients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">gradients</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">gm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+        <span class="n">gradients</span> <span class="o">=</span> <span class="n">gm</span><span class="o">.</span><span class="n">gradients_</span>
+    <span class="k">if</span> <span class="n">aligned</span><span class="p">:</span>
+        <span class="n">gradients</span> <span class="o">=</span> <span class="n">align_gradients</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">n_components</span><span class="p">)</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;aligned-&quot;</span>
+    <span class="k">if</span> <span class="n">save</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">save_to</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">save_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">fmriprepped_data</span><span class="o">.</span><span class="n">data_path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;clean_data&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;func&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">save_dir</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">save_dir</span><span class="p">)</span>
+            <span class="n">save_to</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">n_components</span><span class="si">}</span><span class="s1">gradients-sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">parcellation</span><span class="si">}{</span><span class="n">n_parcels</span><span class="si">}</span><span class="s1">.npy&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">save_to</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_to</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">n_components</span><span class="si">}</span><span class="s1">gradients-sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">parcellation</span><span class="si">}{</span><span class="n">n_parcels</span><span class="si">}</span><span class="s1">.npy&#39;</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">file</span> <span class="o">=</span> <span class="n">save_to</span><span class="p">,</span> <span class="n">arr</span> <span class="o">=</span> <span class="n">gradients</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">gradients</span></div>
+</pre></div>
+
+          </div>
+          <div class="page-nav">
+            <div class="inner"><ul class="page-nav">
+</ul><div class="footer" role="contentinfo">
+      &#169; Copyright 2023, Victoria Shevchenko.
+    <br>
+    Created using <a href="http://sphinx-doc.org/">Sphinx</a> 7.0.1 with <a href="https://github.com/schettino72/sphinx_press_theme">Press Theme</a> 0.8.0.
+</div>
+            </div>
+          </div>
+      </page>
+    </div></div>
+    
+    
+  </body>
+</html>

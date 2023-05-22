@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html  lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+      <title>NeuroConn.gradient package</title>
+    
+          <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+          <link rel="stylesheet" href="_static/theme.css " type="text/css" />
+      
+      <!-- sphinx script_files -->
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+
+      
+      <!-- bundled in js (rollup iife) -->
+      <!-- <script src="_static/theme-vendors.js"></script> -->
+      <script src="_static/theme.js" defer></script>
+    
+  <link rel="index" title="Index" href="genindex.html" />
+  <link rel="search" title="Search" href="search.html" />
+  <link rel="next" title="NeuroConn.preprocessing package" href="NeuroConn.preprocessing.html" />
+  <link rel="prev" title="NeuroConn.data package" href="NeuroConn.data.html" /> 
+  </head>
+
+  <body>
+    <div id="app">
+    <div class="theme-container" :class="pageClasses"><navbar @toggle-sidebar="toggleSidebar">
+  <router-link to="index.html" class="home-link">
+    
+      <span class="site-name">NeuroConn</span>
+    
+  </router-link>
+
+  <div class="links">
+    <navlinks class="can-hide">
+
+
+
+  
+    <div class="nav-item">
+      <a href="https://github.com/victoris93/NeuroConn"
+        class="nav-link external">
+          GitHub <outboundlink></outboundlink>
+      </a>
+    </div>
+  
+
+    </navlinks>
+  </div>
+</navbar>
+
+      
+      <div class="sidebar-mask" @click="toggleSidebar(false)">
+      </div>
+        <sidebar @toggle-sidebar="toggleSidebar">
+          
+          <navlinks>
+            
+
+
+
+  
+    <div class="nav-item">
+      <a href="https://github.com/victoris93/NeuroConn"
+        class="nav-link external">
+          GitHub <outboundlink></outboundlink>
+      </a>
+    </div>
+  
+
+            
+          </navlinks><div id="searchbox" class="searchbox" role="search">
+  <div class="caption"><span class="caption-text">Quick search</span>
+    <div class="searchformwrapper">
+      <form class="search" action="search.html" method="get">
+        <input type="text" name="q" />
+        <input type="submit" value="Search" />
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div><div class="sidebar-links" role="navigation" aria-label="main navigation">
+  
+    <div class="sidebar-group">
+      <p class="caption">
+        <span class="caption-text"><a href="modules.html#pyconn">pyconn</a></span>
+      </p>
+      <ul class="">
+        
+          <li class="toctree-l1 ">
+            
+              <a href="NeuroConn.html" class="reference internal ">NeuroConn package</a>
+            
+
+            
+          </li>
+
+        
+      </ul>
+    </div>
+  
+</div>
+        </sidebar>
+
+      <page>
+          <div class="body-header" role="navigation" aria-label="navigation">
+  
+  <ul class="breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+    
+      <li><a href="modules.html">PyConn</a> &raquo;</li>
+    
+      <li><a href="NeuroConn.html">NeuroConn package</a> &raquo;</li>
+    
+    <li>NeuroConn.gradient package</li>
+  </ul>
+  
+
+  <ul class="page-nav">
+  <li class="prev">
+    <a href="NeuroConn.data.html"
+       title="previous chapter">← NeuroConn.data package</a>
+  </li>
+  <li class="next">
+    <a href="NeuroConn.preprocessing.html"
+       title="next chapter">NeuroConn.preprocessing package →</a>
+  </li>
+</ul>
+  
+</div>
+<hr>
+          <div class="content" role="main" v-pre>
+            
+  <section id="neuroconn-gradient-package">
+<h1>NeuroConn.gradient package<a class="headerlink" href="#neuroconn-gradient-package" title="Permalink to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading">¶</a></h2>
+</section>
+<section id="module-NeuroConn.gradient.gradient">
+<span id="neuroconn-gradient-gradient-module"></span><h2>NeuroConn.gradient.gradient module<a class="headerlink" href="#module-NeuroConn.gradient.gradient" title="Permalink to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="NeuroConn.gradient.gradient.align_gradients">
+<span class="sig-prename descclassname"><span class="pre">NeuroConn.gradient.gradient.</span></span><span class="sig-name descname"><span class="pre">align_gradients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gradients</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">custom_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NeuroConn/gradient/gradient.html#align_gradients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#NeuroConn.gradient.gradient.align_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aligns gradients to a reference set of gradients using Procrustes alignment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gradients</strong> (<em>str</em><em> or </em><em>numpy.ndarray</em>) – The gradients to align.</p></li>
+<li><p><strong>n_components</strong> (<em>int</em>) – The number of components to use from the reference gradients.</p></li>
+<li><p><strong>custom_ref</strong> (<em>str</em><em> or </em><em>numpy.ndarray</em><em>, </em><em>optional</em>) – The reference gradients to align to. If None, the default Margulies et al. (2016) gradients will be used. Default is None.</p></li>
+<li><p><strong>*args</strong> – Additional arguments to pass to ProcrustesAlignment.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The aligned gradients.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="NeuroConn.gradient.gradient.get_gradients">
+<span class="sig-prename descclassname"><span class="pre">NeuroConn.gradient.gradient.</span></span><span class="sig-name descname"><span class="pre">get_gradients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subject</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parcellation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'schaefer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_parcels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cosine'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approach</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'pca'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_mat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aligned</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/NeuroConn/gradient/gradient.html#get_gradients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#NeuroConn.gradient.gradient.get_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes gradients from the subject connectivity matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>str</em><em> or </em><a class="reference internal" href="NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet" title="NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet"><em>FmriPreppedDataSet</em></a>) – The path to the data or the FmriPreppedDataSet object.</p></li>
+<li><p><strong>subject</strong> (<em>str</em>) – The subject ID.</p></li>
+<li><p><strong>n_components</strong> (<em>int</em>) – The number of components to extract.</p></li>
+<li><p><strong>task</strong> (<em>str</em><em>, </em><em>optional</em>) – The task name. Default is ‘rest’.</p></li>
+<li><p><strong>parcellation</strong> (<em>str</em><em>, </em><em>optional</em>) – The parcellation name. Default is ‘schaefer’.</p></li>
+<li><p><strong>n_parcels</strong> (<em>int</em><em>, </em><em>optional</em>) – The number of parcels. Default is 1000.</p></li>
+<li><p><strong>kernel</strong> (<em>str</em><em>, </em><em>optional</em>) – The kernel to use. Default is ‘cosine’.</p></li>
+<li><p><strong>approach</strong> (<em>str</em><em>, </em><em>optional</em>) – The approach to use. Default is ‘pca’.</p></li>
+<li><p><strong>from_mat</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to load the data from a .mat file. Default is True.</p></li>
+<li><p><strong>aligned</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to align the gradients to the Margulies et al. (2016) gradients. Default is True.</p></li>
+<li><p><strong>save</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to save the gradients. Default is True.</p></li>
+<li><p><strong>save_to</strong> (<em>str</em><em>, </em><em>optional</em>) – The path to save the gradients. Default is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The computed gradients.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-NeuroConn.gradient">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-NeuroConn.gradient" title="Permalink to this heading">¶</a></h2>
+</section>
+</section>
+
+
+          </div>
+          <div class="page-nav">
+            <div class="inner"><ul class="page-nav">
+  <li class="prev">
+    <a href="NeuroConn.data.html"
+       title="previous chapter">← NeuroConn.data package</a>
+  </li>
+  <li class="next">
+    <a href="NeuroConn.preprocessing.html"
+       title="next chapter">NeuroConn.preprocessing package →</a>
+  </li>
+</ul><div class="footer" role="contentinfo">
+      &#169; Copyright 2023, Victoria Shevchenko.
+    <br>
+    Created using <a href="http://sphinx-doc.org/">Sphinx</a> 7.0.1 with <a href="https://github.com/schettino72/sphinx_press_theme">Press Theme</a> 0.8.0.
+</div>
+            </div>
+          </div>
+      </page>
+    </div></div>
+    
+    
+  </body>
+</html>

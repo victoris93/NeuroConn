@@ -1,0 +1,20 @@
+NeuroConn package
+=================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   NeuroConn.data
+   NeuroConn.gradient
+   NeuroConn.preprocessing
+
+Module contents
+---------------
+
+.. automodule:: NeuroConn
+   :members:
+   :undoc-members:
+   :show-inheritance:

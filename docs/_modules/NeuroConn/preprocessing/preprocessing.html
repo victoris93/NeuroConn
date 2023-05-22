@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html  lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+      <title>NeuroConn.preprocessing.preprocessing</title>
+    
+          <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+          <link rel="stylesheet" href="../../../_static/theme.css " type="text/css" />
+      
+      <!-- sphinx script_files -->
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+
+      
+      <!-- bundled in js (rollup iife) -->
+      <!-- <script src="../../../_static/theme-vendors.js"></script> -->
+      <script src="../../../_static/theme.js" defer></script>
+    
+  <link rel="index" title="Index" href="../../../genindex.html" />
+  <link rel="search" title="Search" href="../../../search.html" /> 
+  </head>
+
+  <body>
+    <div id="app">
+    <div class="theme-container" :class="pageClasses"><navbar @toggle-sidebar="toggleSidebar">
+  <router-link to="../../../index.html" class="home-link">
+    
+      <span class="site-name">NeuroConn</span>
+    
+  </router-link>
+
+  <div class="links">
+    <navlinks class="can-hide">
+
+
+
+  
+    <div class="nav-item">
+      <a href="https://github.com/victoris93/NeuroConn"
+        class="nav-link external">
+          GitHub <outboundlink></outboundlink>
+      </a>
+    </div>
+  
+
+    </navlinks>
+  </div>
+</navbar>
+
+      
+      <div class="sidebar-mask" @click="toggleSidebar(false)">
+      </div>
+        <sidebar @toggle-sidebar="toggleSidebar">
+          
+          <navlinks>
+            
+
+
+
+  
+    <div class="nav-item">
+      <a href="https://github.com/victoris93/NeuroConn"
+        class="nav-link external">
+          GitHub <outboundlink></outboundlink>
+      </a>
+    </div>
+  
+
+            
+          </navlinks><div id="searchbox" class="searchbox" role="search">
+  <div class="caption"><span class="caption-text">Quick search</span>
+    <div class="searchformwrapper">
+      <form class="search" action="../../../search.html" method="get">
+        <input type="text" name="q" />
+        <input type="submit" value="Search" />
+        <input type="hidden" name="check_keywords" value="yes" />
+        <input type="hidden" name="area" value="default" />
+      </form>
+    </div>
+  </div>
+</div><div class="sidebar-links" role="navigation" aria-label="main navigation">
+  
+    <div class="sidebar-group">
+      <p class="caption">
+        <span class="caption-text"><a href="../../../modules.html#pyconn">pyconn</a></span>
+      </p>
+      <ul class="">
+        
+          <li class="toctree-l1 ">
+            
+              <a href="../../../NeuroConn.html" class="reference internal ">NeuroConn package</a>
+            
+
+            
+          </li>
+
+        
+      </ul>
+    </div>
+  
+</div>
+        </sidebar>
+
+      <page>
+          <div class="body-header" role="navigation" aria-label="navigation">
+  
+  <ul class="breadcrumbs">
+    <li><a href="../../../index.html">Docs</a> &raquo;</li>
+    
+      <li><a href="../../index.html">Module code</a> &raquo;</li>
+    
+    <li>NeuroConn.preprocessing.preprocessing</li>
+  </ul>
+  
+
+  <ul class="page-nav">
+</ul>
+  
+</div>
+<hr>
+          <div class="content" role="main" v-pre>
+            
+  <h1>Source code for NeuroConn.preprocessing.preprocessing</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">nilearn</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">nibabel</span> <span class="k">as</span> <span class="nn">nib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">nilearn</span> <span class="kn">import</span> <span class="n">datasets</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">nilearn.maskers</span> <span class="kn">import</span> <span class="n">NiftiLabelsMasker</span>
+<span class="kn">from</span> <span class="nn">nilearn</span> <span class="kn">import</span> <span class="n">signal</span>
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">SimpleImputer</span>
+<span class="kn">import</span> <span class="nn">subprocess</span> <span class="k">as</span> <span class="nn">sp</span>
+
+
+<div class="viewcode-block" id="z_transform_conn_matrix"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.z_transform_conn_matrix">[docs]</a><span class="k">def</span> <span class="nf">z_transform_conn_matrix</span><span class="p">(</span><span class="n">conn_matrix</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Applies Fisher&#39;s z transform to a connectivity matrix.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    conn_matrix : numpy.ndarray</span>
+<span class="sd">        The connectivity matrix to transform.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    numpy.ndarray</span>
+<span class="sd">        The transformed connectivity matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conn_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctanh</span><span class="p">(</span><span class="n">conn_matrix</span><span class="p">)</span> <span class="c1"># Fisher&#39;s z transform</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">conn_matrix</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span> <span class="c1"># remove nans and infs in the matrix</span>
+        <span class="n">nan_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">conn_matrix</span><span class="p">))</span>
+        <span class="n">conn_matrix</span><span class="p">[</span><span class="n">nan_indices</span><span class="p">]</span> <span class="o">=</span> <span class="mf">.0000000001</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">conn_matrix</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">inf_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">conn_matrix</span><span class="p">))</span>
+        <span class="n">conn_matrix</span><span class="p">[</span><span class="n">inf_indices</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">conn_matrix</span></div>
+
+<div class="viewcode-block" id="RawDataset"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.RawDataset">[docs]</a><span class="k">class</span> <span class="nc">RawDataset</span><span class="p">():</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">BIDS_path</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span> <span class="o">=</span> <span class="n">BIDS_path</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The path to the dataset in BIDS format must be specified (BIDS_path).&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_description_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span> <span class="o">+</span> <span class="s1">&#39;/dataset_description.json&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">participant_data_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span> <span class="o">+</span> <span class="s1">&#39;/participants.tsv&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_participant_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">participant_data_path</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data_description</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_subjects</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="RawDataset.docker_fmriprep"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.RawDataset.docker_fmriprep">[docs]</a>    <span class="k">def</span> <span class="nf">docker_fmriprep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">fs_license_path</span><span class="p">,</span> <span class="n">skip_bids_validation</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">fs_reconall</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">mem</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">task</span> <span class="o">=</span> <span class="s1">&#39;rest&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs the fMRIprep pipeline in a Docker container for a given subject.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subject : str</span>
+<span class="sd">            The label of the participant to process.</span>
+<span class="sd">        skip_bids_validation : bool, optional</span>
+<span class="sd">            Whether to skip BIDS validation. Default is True.</span>
+<span class="sd">        fs_license_path : str, optional</span>
+<span class="sd">            The path to the (full) FreeSurfer license file</span>
+<span class="sd">        fs_reconall : bool, optional</span>
+<span class="sd">            Whether to run FreeSurfer&#39;s recon-all. Default is True.</span>
+<span class="sd">        mem : int, optional</span>
+<span class="sd">            The amount of memory to allocate to the Docker container, in MB. Default is 5000.</span>
+<span class="sd">        task : str, optional</span>
+<span class="sd">            The ID of the task to preprocess, or None to preprocess all tasks. Default is &#39;rest&#39;.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span>
+        <span class="n">fmriprep_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="s1">&#39;derivatives&#39;</span><span class="p">,</span> <span class="s1">&#39;fmriprep&#39;</span><span class="p">)</span>
+        <span class="n">skip_bids_validation</span> <span class="o">=</span> <span class="s1">&#39;--skip-bids-validation&#39;</span> <span class="k">if</span> <span class="n">skip_bids_validation</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">fs_reconall</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="n">fs_reconall</span> <span class="k">else</span> <span class="s1">&#39;--fs-no-reconall&#39;</span>
+        <span class="k">if</span> <span class="n">task</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;--task-id </span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">fmriprep_bash</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        export PATH=&quot;$HOME/.local/bin:$PATH&quot;</span>
+<span class="s2">        mkdir -p </span><span class="si">{</span><span class="n">fmriprep_path</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">        export FS_LICENSE=</span><span class="si">{</span><span class="n">fs_license_path</span><span class="si">}</span><span class="s2"></span>
+<span class="s2">        fmriprep-docker </span><span class="si">{</span><span class="n">data_path</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">fmriprep_path</span><span class="si">}</span><span class="s2"> participant --participant-label </span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">skip_bids_validation</span><span class="si">}</span><span class="s2"> --fs-license-file $FS_LICENSE </span><span class="si">{</span><span class="n">fs_reconall</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s2"> --stop-on-first-crash --mem_mb </span><span class="si">{</span><span class="n">mem</span><span class="si">}</span><span class="s2"> --output-spaces MNI152NLin2009cAsym:res-2 -w $HOME</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span><span class="si">}</span><span class="s2">/fmriprep_logs&quot;</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span><span class="si">}</span><span class="s2">/fmriprep_logs&quot;</span><span class="p">)</span>
+        <span class="n">log_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span><span class="si">}</span><span class="s2">/fmriprep_logs/fmriprep_logs_sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s2">.txt&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+            <span class="n">process</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">&quot;bash&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">,</span> <span class="n">fmriprep_bash</span><span class="p">],</span> <span class="n">stdout</span><span class="o">=</span><span class="n">file</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">file</span><span class="p">,</span> <span class="n">universal_newlines</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="k">while</span> <span class="n">process</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">log_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">())</span></div>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">participant_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_participant_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_participant_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">participant_data_path</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_participant_data</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">subjects</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subjects</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_subjects</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_participant_data</span><span class="p">[</span><span class="s1">&#39;participant_id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_subjects</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">i</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;sub-&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subjects</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subjects</span>
+    
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">data_description</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_description</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data_description</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_description_path</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data_description</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_description</span><span class="p">[</span><span class="s1">&#39;Name&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+    
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Dataset(Name=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">,</span><span class="se">\n</span><span class="s1">Subjects=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">subjects</span><span class="si">}</span><span class="s1">,</span><span class="se">\n</span><span class="s1">Data_Path=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span><span class="si">}</span><span class="s1">)&#39;</span></div>
+
+
+
+<div class="viewcode-block" id="FmriPreppedDataSet"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet">[docs]</a><span class="k">class</span> <span class="nc">FmriPreppedDataSet</span><span class="p">(</span><span class="n">RawDataset</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">BIDS_path</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">BIDS_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">BIDS_path</span> <span class="o">+</span> <span class="s1">&#39;/derivatives&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_sub_dirs</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_confounds_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="vm">__file__</span><span class="p">),</span> <span class="s2">&quot;default_confounds.txt&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subject_conn_paths</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">subject</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">subjects</span><span class="p">:</span>
+            <span class="n">output_dir</span> <span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span><span class="s1">&#39;clean_data&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;func&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_dir</span><span class="p">):</span>
+                <span class="n">conn_mat_paths</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">output_dir</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span> <span class="k">if</span> <span class="s2">&quot;conn-matrix&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">conn_mat_paths</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">subject_conn_paths</span><span class="p">[</span><span class="n">subject</span><span class="p">]</span> <span class="o">=</span> <span class="n">conn_mat_paths</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;Subjects=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">subjects</span><span class="si">}</span><span class="s1">,</span><span class="se">\n</span><span class="s1"> Data_Path=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="si">}</span><span class="s1">)&#39;</span>
+    
+    <span class="k">def</span> <span class="nf">_find_sub_dirs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Finds the subdirectory containing the subject data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            The path to the subdirectory containing the subject data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path_not_found</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">while</span> <span class="n">path_not_found</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">subdirs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">filename</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">strerror</span> <span class="o">==</span> <span class="s1">&#39;No such file or directory&#39;</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="s2">&quot;The data have not been preprocessed with fmriprep: no &#39;derivatives&#39; directory found.&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+            <span class="k">for</span> <span class="n">subdir</span> <span class="ow">in</span> <span class="n">subdirs</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">subdir</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;sub-&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">subdir</span> <span class="ow">in</span> <span class="n">subdirs</span><span class="p">):</span>
+                        <span class="n">path_not_found</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="n">subdir</span><span class="p">)):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="n">subdir</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span>
+    
+<div class="viewcode-block" id="FmriPreppedDataSet.get_ts_paths"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet.get_ts_paths">[docs]</a>    <span class="k">def</span> <span class="nf">get_ts_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">task</span><span class="p">):</span> <span class="c1"># needs to be adapted to multiple sessions</span>
+        <span class="c1">#numpy-style docstring</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subject : str</span>
+<span class="sd">            The subject ID.</span>
+<span class="sd">        task : str</span>
+<span class="sd">            The task name.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ts_paths : list</span>
+<span class="sd">            A list of paths to the time series files.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">subject_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">session_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sessions</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>
+        <span class="n">ts_paths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_names</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">session_name</span> <span class="ow">in</span> <span class="n">session_names</span><span class="p">:</span>
+                <span class="n">session_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;ses-</span><span class="si">{</span><span class="n">session_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;func&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">session_dir</span><span class="p">):</span>
+                    <span class="n">ts_paths</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">session_dir</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">session_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">i</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz&#39;</span><span class="p">)])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">subject_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_dir</span><span class="p">,</span> <span class="s1">&#39;func&#39;</span><span class="p">)</span>
+            <span class="n">ts_paths</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">subject_dir</span><span class="si">}</span><span class="s1">/</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">subject_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">i</span> <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz&#39;</span><span class="p">)]</span> <span class="c1">#sub-01_task-rest_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz</span>
+        <span class="k">return</span> <span class="n">ts_paths</span></div>
+    
+<div class="viewcode-block" id="FmriPreppedDataSet.get_sessions"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet.get_sessions">[docs]</a>    <span class="k">def</span> <span class="nf">get_sessions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of session names for a given subject. If the subject has no sessions, an empty list is returned.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subject : str</span>
+<span class="sd">            The label of the subject to retrieve session names for.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list of str</span>
+<span class="sd">            A list of session names for the given subject.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">subject_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="si">}</span><span class="s1">/sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="n">subdirs</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">subject_dir</span><span class="p">)</span>
+        <span class="n">session_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">subdir</span> <span class="ow">in</span> <span class="n">subdirs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">subdir</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;ses-&#39;</span><span class="p">):</span>
+                <span class="n">session_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">subdir</span><span class="p">[</span><span class="mi">4</span><span class="p">:])</span>
+        <span class="k">return</span> <span class="n">session_names</span></div>
+    
+    <span class="k">def</span> <span class="nf">_impute_nans_confounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">pick_confounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dataframe : pandas.DataFrame</span>
+<span class="sd">            The dataframe containing the confounds.</span>
+<span class="sd">        pick_confounds : list or numpy.ndarray</span>
+<span class="sd">            The confounds to be picked from the dataframe.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df_no_nans : pandas.DataFrame</span>
+<span class="sd">            The dataframe with the confounds without NaNs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">imputer</span> <span class="o">=</span> <span class="n">SimpleImputer</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pick_confounds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pick_confounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_confounds_path</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pick_confounds</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+            <span class="n">df_no_nans</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">imputer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">dataframe</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">dataframe</span><span class="o">.</span><span class="n">columns</span><span class="p">)[</span><span class="n">pick_confounds</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">df_no_nans</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">imputer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">dataframe</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="n">dataframe</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df_no_nans</span>
+    
+<div class="viewcode-block" id="FmriPreppedDataSet.get_confounds"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet.get_confounds">[docs]</a>    <span class="k">def</span> <span class="nf">get_confounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">no_nans</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">pick_confounds</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a list of confounds for a given subject and task.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subject : str</span>
+<span class="sd">            The ID of the subject.</span>
+<span class="sd">        task : str</span>
+<span class="sd">            The name of the task.</span>
+<span class="sd">        no_nans : bool, optional</span>
+<span class="sd">            Whether to impute NaNs in the confounds. Default is True.</span>
+<span class="sd">        pick_confounds : list or numpy.ndarray, optional</span>
+<span class="sd">            The confounds to be picked from the dataframe. If None, the default confounds will be used. Default is None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        list</span>
+<span class="sd">            A list of confounds.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pick_confounds</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pick_confounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default_confounds_path</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pick_confounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">pick_confounds</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;str&#39;</span><span class="p">)</span>
+        <span class="n">subject_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">session_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sessions</span><span class="p">(</span><span class="n">subject</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">session_names</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">confound_paths</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">confound_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">session_name</span> <span class="ow">in</span> <span class="n">session_names</span><span class="p">:</span>
+                <span class="n">session_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;ses-</span><span class="si">{</span><span class="n">session_name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;func&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">session_dir</span><span class="p">):</span>
+                    <span class="n">confound_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">session_dir</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">session_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">f</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;confounds_timeseries.tsv&#39;</span><span class="p">)]</span>
+                    <span class="n">confound_paths</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">confound_files</span><span class="p">)</span>
+                    
+            <span class="k">if</span> <span class="n">no_nans</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">confounds_path</span> <span class="ow">in</span> <span class="n">confound_paths</span><span class="p">:</span>
+                    <span class="n">confounds</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">confounds_path</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="n">confounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_impute_nans_confounds</span><span class="p">(</span><span class="n">confounds</span><span class="p">)</span>
+                    <span class="n">confound_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">confounds</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">confounds_path</span> <span class="ow">in</span> <span class="n">confound_paths</span><span class="p">:</span>
+                    <span class="n">confounds</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">confounds_path</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)[</span><span class="n">pick_confounds</span><span class="p">]</span>
+                    <span class="n">confound_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">confounds</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">func_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subject_dir</span><span class="p">,</span> <span class="s2">&quot;func&quot;</span><span class="p">)</span>
+            <span class="n">confound_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">func_dir</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">func_dir</span><span class="p">)</span> <span class="k">if</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">f</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;confounds_timeseries.tsv&#39;</span><span class="p">)]</span>
+            <span class="k">if</span> <span class="n">no_nans</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">confound_list</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_impute_nans_confounds</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">),</span> <span class="n">pick_confounds</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">confound_files</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">confound_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">confound_files</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">confound_list</span></div>
+    
+<div class="viewcode-block" id="FmriPreppedDataSet.parcellate"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet.parcellate">[docs]</a>    <span class="k">def</span> <span class="nf">parcellate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">parcellation</span> <span class="o">=</span> <span class="s1">&#39;schaefer&#39;</span><span class="p">,</span><span class="n">task</span> <span class="o">=</span><span class="s2">&quot;rest&quot;</span><span class="p">,</span> <span class="n">n_parcels</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">gsr</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span> <span class="c1"># adapt to multiple sessions</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subject : str</span>
+<span class="sd">            subject id</span>
+<span class="sd">        parcellation : str</span>
+<span class="sd">            parcellation to use</span>
+<span class="sd">        task : str</span>
+<span class="sd">            task to use</span>
+<span class="sd">        n_parcels : int</span>
+<span class="sd">            number of parcels to use</span>
+<span class="sd">        gsr : bool  </span>
+<span class="sd">            whether to use global signal regression</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        parc_ts_list : list</span>
+<span class="sd">            list of parcellated time series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">atlas</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">parcellation</span> <span class="o">==</span> <span class="s1">&#39;schaefer&#39;</span><span class="p">:</span>
+            <span class="n">atlas</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">fetch_atlas_schaefer_2018</span><span class="p">(</span><span class="n">n_rois</span><span class="o">=</span><span class="n">n_parcels</span><span class="p">,</span> <span class="n">yeo_networks</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">resolution_mm</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">base_url</span><span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">resume</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">masker</span> <span class="o">=</span>  <span class="n">NiftiLabelsMasker</span><span class="p">(</span><span class="n">labels_img</span><span class="o">=</span><span class="n">atlas</span><span class="o">.</span><span class="n">maps</span><span class="p">,</span> <span class="n">standardize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">memory</span><span class="o">=</span><span class="s1">&#39;nilearn_cache&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+        <span class="n">parc_ts_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">subject_ts_paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ts_paths</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+        <span class="n">confounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_confounds</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">task</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">subject_ts</span><span class="p">,</span> <span class="n">subject_confounds</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">subject_ts_paths</span><span class="p">,</span> <span class="n">confounds</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">gsr</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="n">parc_ts</span> <span class="o">=</span> <span class="n">masker</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">subject_ts</span><span class="p">,</span> <span class="n">confounds</span> <span class="o">=</span> <span class="n">subject_confounds</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s2">&quot;global_signal&quot;</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">))</span>
+                <span class="n">parc_ts_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parc_ts</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">parc_ts</span> <span class="o">=</span> <span class="n">masker</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">subject_ts</span><span class="p">,</span> <span class="n">confounds</span> <span class="o">=</span> <span class="n">subject_confounds</span><span class="p">)</span>
+                <span class="n">parc_ts_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parc_ts</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">parc_ts_list</span></div>
+    
+<div class="viewcode-block" id="FmriPreppedDataSet.clean_signal"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet.clean_signal">[docs]</a>    <span class="k">def</span> <span class="nf">clean_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="s2">&quot;rest&quot;</span><span class="p">,</span> <span class="n">parcellation</span><span class="o">=</span><span class="s1">&#39;schaefer&#39;</span><span class="p">,</span> <span class="n">n_parcels</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">gsr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">save_to</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span> <span class="c1"># add a save option + path</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Cleans the time series for a given subject using a specified parcellation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subject : str</span>
+<span class="sd">            The ID of the subject to clean the time series for.</span>
+<span class="sd">        task : str, optional</span>
+<span class="sd">            The name of the task to use. Default is &#39;rest&#39;.</span>
+<span class="sd">        parcellation : str, optional</span>
+<span class="sd">            The name of the parcellation to use. Default is &#39;schaefer&#39;.</span>
+<span class="sd">        n_parcels : int, optional</span>
+<span class="sd">            The number of parcels to use. Default is 1000.</span>
+<span class="sd">        gsr : bool, optional</span>
+<span class="sd">            Whether to use global signal regression. Default is False.</span>
+<span class="sd">        save : bool, optional</span>
+<span class="sd">            Whether to save the cleaned time series. Default is False.</span>
+<span class="sd">        save_to : str, optional</span>
+<span class="sd">            The path to save the cleaned time series. If None, the time series will be saved to the default directory. Default is None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            The cleaned time series of shape (n_sessions, n_parcels, n_volumes).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parc_ts_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcellate</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">parcellation</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">n_parcels</span><span class="p">,</span> <span class="n">gsr</span><span class="p">)</span>
+        <span class="n">clean_ts_array</span> <span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">parc_ts</span> <span class="ow">in</span> <span class="n">parc_ts_list</span><span class="p">:</span>
+            <span class="n">clean_ts</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">clean</span><span class="p">(</span><span class="n">parc_ts</span><span class="p">,</span> <span class="n">t_r</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">low_pass</span><span class="o">=</span><span class="mf">0.08</span><span class="p">,</span> <span class="n">high_pass</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">standardize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">detrend</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">clean_ts_array</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clean_ts</span><span class="p">[</span><span class="mi">10</span><span class="p">:])</span> <span class="c1"># discarding first 10 volumes</span>
+        <span class="n">clean_ts_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">clean_ts_array</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">clean_ts_array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">save</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">save_to</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">save_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;clean_data&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;func&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">save_dir</span><span class="p">):</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">save_dir</span><span class="p">)</span>
+                <span class="n">save_to</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">save_dir</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;clean-ts-sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">parcellation</span><span class="si">}{</span><span class="n">n_parcels</span><span class="si">}</span><span class="s1">.npy&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">save_to</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_to</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;clean-ts-sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">parcellation</span><span class="si">}{</span><span class="n">n_parcels</span><span class="si">}</span><span class="s1">.npy&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">save_to</span><span class="p">)</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">save_to</span><span class="p">,</span> <span class="n">clean_ts_array</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">clean_ts_array</span></div>
+    
+<div class="viewcode-block" id="FmriPreppedDataSet.get_conn_matrix"><a class="viewcode-back" href="../../../NeuroConn.preprocessing.html#NeuroConn.preprocessing.preprocessing.FmriPreppedDataSet.get_conn_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">get_conn_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subject</span><span class="p">,</span> <span class="n">subject_ts</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">parcellation</span> <span class="o">=</span> <span class="s1">&#39;schaefer&#39;</span><span class="p">,</span> <span class="n">task</span> <span class="o">=</span> <span class="s1">&#39;rest&#39;</span><span class="p">,</span> <span class="n">concat_ts</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">n_parcels</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">gsr</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">z_transformed</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">save</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">save_to</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes the connectivity matrix for a given subject.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        subject : str</span>
+<span class="sd">            The ID of the subject to compute the connectivity matrix for.</span>
+<span class="sd">        subject_ts : str, optional</span>
+<span class="sd">            The path to the cleaned time series. If None, the time series will be cleaned using the `clean_signal` method. Default is None.</span>
+<span class="sd">        parcellation : str, optional</span>
+<span class="sd">            The name of the parcellation to use. Default is &#39;schaefer&#39;.</span>
+<span class="sd">        task : str, optional</span>
+<span class="sd">            The name of the task to use. Default is &#39;rest&#39;.</span>
+<span class="sd">        concat_ts : bool, optional</span>
+<span class="sd">            Whether to compute the connectivity matrix on concatenated time series (e.g., if several sessions available). Default is False.</span>
+<span class="sd">        n_parcels : int, optional</span>
+<span class="sd">            The number of parcels to use. Default is 1000.</span>
+<span class="sd">        gsr : bool, optional</span>
+<span class="sd">            Whether to use global signal regression. Default is False.</span>
+<span class="sd">        z_transformed : bool, optional</span>
+<span class="sd">            Whether to apply Fisher&#39;s z transform to the connectivity matrix. Default is True.</span>
+<span class="sd">        save : bool, optional</span>
+<span class="sd">            Whether to save the connectivity matrix. Default is False.</span>
+<span class="sd">        save_to : str, optional</span>
+<span class="sd">            The path to save the connectivity matrix. If None, the matrix will be saved to the default directory. Default is None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        np.ndarray</span>
+<span class="sd">            The connectivity matrix of shape (n_sessions, n_parcels, n_parcels).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">subject_ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">subj_ts_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clean_signal</span><span class="p">(</span><span class="n">subject</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">parcellation</span><span class="p">,</span> <span class="n">n_parcels</span><span class="p">,</span> <span class="n">gsr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">subj_ts_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">subject_ts</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">concat_ts</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">subj_ts_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">row_stack</span><span class="p">(</span><span class="n">subj_ts_array</span><span class="p">)</span>
+            <span class="n">conn_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">subj_ts_array</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">z_transformed</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">conn_matrix</span> <span class="o">=</span> <span class="n">z_transform_conn_matrix</span><span class="p">(</span><span class="n">conn_matrix</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">conn_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">subj_ts_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">n_parcels</span><span class="p">,</span> <span class="n">n_parcels</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">subj_ts</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">subj_ts_array</span><span class="p">):</span>
+                <span class="n">conn_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">subj_ts</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">z_transformed</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">conn_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">z_transform_conn_matrix</span><span class="p">(</span><span class="n">conn_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">save</span> <span class="o">==</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">save_to</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">save_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data_path</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;clean_data&#39;</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;func&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">save_dir</span><span class="p">):</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">save_dir</span><span class="p">)</span>
+                <span class="n">save_to</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_dir</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;conn-matrix-sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">parcellation</span><span class="si">}{</span><span class="n">n_parcels</span><span class="si">}</span><span class="s1">.npy&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">save_to</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_to</span><span class="p">,</span> <span class="sa">f</span><span class="s1">&#39;conn-matrix-sub-</span><span class="si">{</span><span class="n">subject</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s1">-</span><span class="si">{</span><span class="n">parcellation</span><span class="si">}{</span><span class="n">n_parcels</span><span class="si">}</span><span class="s1">.npy&#39;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">subject_conn_paths</span><span class="p">[</span><span class="n">subject</span><span class="p">]</span> <span class="o">=</span> <span class="n">save_to</span>
+
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">save_to</span><span class="p">,</span> <span class="n">conn_matrix</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">conn_matrix</span></div></div>
+</pre></div>
+
+          </div>
+          <div class="page-nav">
+            <div class="inner"><ul class="page-nav">
+</ul><div class="footer" role="contentinfo">
+      &#169; Copyright 2023, Victoria Shevchenko.
+    <br>
+    Created using <a href="http://sphinx-doc.org/">Sphinx</a> 7.0.1 with <a href="https://github.com/schettino72/sphinx_press_theme">Press Theme</a> 0.8.0.
+</div>
+            </div>
+          </div>
+      </page>
+    </div></div>
+    
+    
+  </body>
+</html>

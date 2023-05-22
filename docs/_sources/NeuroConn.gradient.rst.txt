@@ -1,0 +1,21 @@
+NeuroConn.gradient package
+==========================
+
+Submodules
+----------
+
+NeuroConn.gradient.gradient module
+----------------------------------
+
+.. automodule:: NeuroConn.gradient.gradient
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: NeuroConn.gradient
+   :members:
+   :undoc-members:
+   :show-inheritance:

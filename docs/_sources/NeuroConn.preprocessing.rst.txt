@@ -1,0 +1,21 @@
+NeuroConn.preprocessing package
+===============================
+
+Submodules
+----------
+
+NeuroConn.preprocessing.preprocessing module
+--------------------------------------------
+
+.. automodule:: NeuroConn.preprocessing.preprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: NeuroConn.preprocessing
+   :members:
+   :undoc-members:
+   :show-inheritance:
