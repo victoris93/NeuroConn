@@ -1,0 +1,8 @@
+nilearn
+numpy
+pandas
+nibabel
+scikit-learn
+brainspace
+gdown
+fmriprep-docker
