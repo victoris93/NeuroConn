@@ -2,6 +2,7 @@ import numpy as np
 import os
 from PyConn.preprocessing.preprocessing import RawDataset, FmriPreppedDataSet
 from PyConn.data.example_datasets import fetch_example_data
+from PyConn.gradient.gradient import get_gradients
 
 example_data = fetch_example_data('https://drive.google.com/file/d/1XjF5wDJXHzMyfoAjQE6NW2xcj9PulZzH/view?usp=share_link')
 
@@ -41,3 +42,19 @@ def test_conn_matrix():
     assert conn_matrix.shape[2] == 1000, "Third dimension should be 1000 (n_parcels)"
     
     assert os.path.exists(path_conn_matrix), "Matrix was not saved"
+
+def test_get_gradients():
+    gradients = get_gradients(example_data, '52', n_components = 10, task = "rest", aligned = False)
+    if len(gradients.shape) == 3:
+        assert gradients.shape[0] == 1, "First dimension should be 1 (n_sessions)"
+        assert gradients.shape[1] == 1000, "Second dimension should be 1000 (n_parcels)"
+        assert gradients.shape[2] == 10, "Third dimension should be 10 (n_components)"
+    else:
+        assert gradients.shape[0] == 1000, "First dimension should be 1000 (n_parcels)"
+        assert gradients.shape[1] == 10, "Second dimension should be 10 (n_components)"
+
+def test_get_gradients_aligned():
+    gradients = get_gradients(example_data, '52', n_components = 10, task = "rest", aligned = True)
+    assert len(gradients.shape) == 3, "Aligned gradients should be a 3D array"
+    assert gradients.shape[1] == 1000, "Second dimension should be 1000 (n_parcels)"
+    assert gradients.shape[2] == 10, "Third dimension should be 10 (n_components)"
