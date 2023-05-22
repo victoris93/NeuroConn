@@ -1,6 +1,7 @@
 # NeuroConn
 
 NeuroConn is a Python package that provides a user-friendly interface for fMRI preprocessing and computing connectivity matrices and gradients. It is designed as a BIDS application, allowing easy integration with BIDS-formatted datasets.
+Documentation: https://victoris93.github.io/NeuroConn/
 
 ## Features
 
