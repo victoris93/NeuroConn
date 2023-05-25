@@ -10,7 +10,35 @@ from nilearn.maskers import NiftiLabelsMasker
 from nilearn import signal
 from sklearn.impute import SimpleImputer
 import subprocess as sp
+import platform
 
+def parse_path_windows_docker(path):
+    r"""
+    Parses a path in Windows format to a path in Docker format.
+
+    Parameters
+    ----------
+    path : str
+        The path to parse.
+
+    Returns
+    -------
+    str
+        The parsed path.
+
+    Examples
+    --------
+    parse_path_windows_docker(r'C:\Users\User\Desktop\data')
+    '/c/Users/User/Desktop/data'
+    """
+    
+    path = path.replace('\\', '/')
+    path = path.replace(':', '')
+    if path[0] == '/':
+        path = '/' + path[1].lower() + '/' + path[3:]
+    else:
+        path = '/' + path[0].lower() + '/' + path[2:]
+    return path
 
 def z_transform_conn_matrix(conn_matrix):
     """
@@ -49,8 +77,10 @@ class RawDataset():
         self._name = None
         self._data_description = None
         self._subjects = None
+    
 
-    def docker_fmriprep(self, subject, fs_license_path, skip_bids_validation = True, fs_reconall = True, mem = 5000, task = 'rest'):
+    def docker_fmriprep(self, subject, fs_license_path, nthreads, skip_bids_validation = True, fs_reconall = False, mem = 5000, task = 'rest'):
+
         """
         Runs the fMRIprep pipeline in a Docker container for a given subject.
 
@@ -73,20 +103,56 @@ class RawDataset():
         -------
         None
         """
-        data_path = self.BIDS_path
-        fmriprep_path = os.path.join(data_path, 'derivatives', 'fmriprep')
+    
         skip_bids_validation = '--skip-bids-validation' if skip_bids_validation else ''
         fs_reconall = '' if fs_reconall else '--fs-no-reconall'
         if task != None:
             task = f'--task-id {task}'
         else:
             task = ''
-        fmriprep_bash = f"""
-        export PATH="$HOME/.local/bin:$PATH"
-        mkdir -p {fmriprep_path}
-        export FS_LICENSE={fs_license_path}
-        fmriprep-docker {data_path} {fmriprep_path} participant --participant-label {subject} {skip_bids_validation} --fs-license-file $FS_LICENSE {fs_reconall} {task} --stop-on-first-crash --mem_mb {mem} --output-spaces MNI152NLin2009cAsym:res-2 -w $HOME
-        """
+        if platform.system() == 'Windows': # check how many threads available
+            data_path = parse_path_windows_docker(rf'{self.BIDS_path}≠')
+            fs_license_path = parse_path_windows_docker(fs_license_path)
+            homepath = os.environ['HOMEPATH']
+            homepath = parse_path_windows_docker(rf'{homepath}')
+            fmriprep_path = os.path.join(data_path, 'derivatives', 'fmriprep')
+            if not os.path.exists(fmriprep_path):
+                os.makedirs(fmriprep_path)
+            fmriprep_bash = f"""
+            docker run -ti --rm -v {data_path}:/data:ro \
+                -v {fmriprep_path}:/out \
+                -v {homepath}:/work \
+                -v {fs_license_path}:/license \
+                nipreps/fmriprep:23.0.2 /data /out/fmriprep-23.0.2 \
+                participant --participant-label {subject} \
+                -w /work \
+                {skip_bids_validation} \
+                {fs_reconall} \
+                --fs-license-file /license \
+                --output-spaces MNI152NLin2009cAsym:res-2 \
+                --nthreads {nthreads}
+            """
+        else:
+            data_path = rf'{self.BIDS_path}' # Do Docker
+            fmriprep_path = os.path.join(data_path, 'derivatives', 'fmriprep')
+            if not os.path.exists(fmriprep_path):
+                os.makedirs(fmriprep_path)
+            fmriprep_bash = f"""
+            export PATH="$HOME/.local/bin:$PATH"
+            mkdir -p {fmriprep_path}
+            FS_LICENSE={fs_license_path}
+            fmriprep-docker {data_path} {fmriprep_path} \
+                participant --participant-label {subject} \
+                {skip_bids_validation} \
+                --fs-license-file $FS_LICENSE \
+                {fs_reconall} \
+                {task} \
+                --stop-on-first-crash \
+                --mem_mb {mem} \
+                --output-spaces MNI152NLin2009cAsym:res-2 -w \
+                $HOME \
+                --nthreads {nthreads}
+            """
         if not os.path.exists(f"{self.BIDS_path}/fmriprep_logs"):
             os.makedirs(f"{self.BIDS_path}/fmriprep_logs")
         log_file = f"{self.BIDS_path}/fmriprep_logs/fmriprep_logs_sub-{subject}.txt"

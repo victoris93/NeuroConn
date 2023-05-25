@@ -5,7 +5,7 @@ with open('README.md', 'r') as f:
 
 setup(
     name='NeuroConn',
-    version='0.1.0a5',
+    version='0.1.0a6',
     description='A BIDS toolbox for connectivity & gradient analyses.',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -13,7 +13,7 @@ setup(
     author_email='shevchenko682@gmail.com',
     python_requires='>=3.6',
     packages=find_packages(),
-    url='https://github.com/victoris93/NeuroConn',  # Added comma here
+    url='https://github.com/victoris93/NeuroConn',
     install_requires=[
         'nilearn',
         'numpy',
