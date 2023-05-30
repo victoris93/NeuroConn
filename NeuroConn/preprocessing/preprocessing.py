@@ -108,21 +108,11 @@ def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path,
                 --nthreads {nthreads}
             """
     else:
-        export_fmriprep_path = r'setx PATH "%USERPROFILE%\.local\bin;%PATH%' if system == 'Windows' else 'export PATH=$HOME/.local/bin:$PATH'
+        export_fmriprep_path = r"set PATH=%PATH%;C:\Users\Utilisateur\neuro\Lib\site-packages\fmriprep_docker" if system == 'Windows' else 'export PATH=$HOME/.local/bin:$PATH'
+        print(export_fmriprep_path)
         fmriprep_command = f"""
         {export_fmriprep_path}
-        FS_LICENSE={fs_license_path}
-        fmriprep-docker {data_path} {fmriprep_path} \
-            participant --participant-label {participant_label} \
-            {skip_bids_validation} \
-            --fs-license-file $FS_LICENSE \
-            {fs_recon_all} \
-            {task} \
-            --stop-on-first-crash \
-            --mem_mb {mem_mb} \
-            --output-spaces {output_spaces} \
-            -w {work_path} \
-            --nthreads {nthreads}
+        fmriprep-docker {data_path} {fmriprep_path} participant --participant-label {participant_label} {skip_bids_validation} --fs-license-file {fs_license_path} {fs_recon_all} {task} --stop-on-first-crash --mem_mb {mem_mb} --output-spaces {output_spaces} -w {work_path} --nthreads {nthreads}
         """
 
     return fmriprep_command
@@ -224,7 +214,12 @@ class RawDataset():
             os.makedirs(log_dir)
         log_file = f"{log_dir}/fmriprep_logs_sub-{subject}.txt"
         with open(log_file, "w") as file:
-            process = sp.Popen(["bash", "-c", fmrirep_command], stdout=file, stderr=file, universal_newlines=True)
+            if platform.system() == "Windows":
+                print(fmrirep_command)
+                process = sp.Popen(fmrirep_command, shell = True, stdout=file, stderr=file, universal_newlines=True)
+            else:
+                process = sp.Popen(["bash", "-c", fmrirep_command], stdout=file, stderr=file, universal_newlines=True)
+            #process = sp.Popen(["bash", "-c", cmd], stdout=file, stderr=file, universal_newlines=True)
 
             while process.poll() is None:
                 time.sleep(0.1)
