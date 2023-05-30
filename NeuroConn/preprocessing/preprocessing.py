@@ -20,6 +20,7 @@ def parse_path_windows_docker(path):
     ----------
     path : str
         The path to parse.
+        On Windows, use a raw string literal (e.g. r'C:\path\to\file').
 
     Returns
     -------
@@ -28,8 +29,10 @@ def parse_path_windows_docker(path):
 
     Examples
     --------
+    ```
     parse_path_windows_docker(r'C:\Users\User\Desktop\data')
     '/c/Users/User/Desktop/data'
+    ```
     """
     
     path = path.replace('\\', '/')
@@ -39,6 +42,91 @@ def parse_path_windows_docker(path):
     else:
         path = '/' + path[0].lower() + '/' + path[2:]
     return path
+
+def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper,mem_mb, system = platform.system()):
+    r"""
+    Parses the arguments for the fmriprep docker command.
+
+    Parameters
+    ----------
+    data_path : str
+        The path to the data.
+        On Windows, use a raw string literal (e.g. r'C:\path\to\file').
+    fnriprep_path : str
+        The path to the fmriprep output directory. By default, the fmriprep output directory is data_path/derivatives/fmriprep.
+        On Windows, use a raw string literal (e.g. r'C:\path\to\file').
+    fs_license_path : str
+        The path to the freesurfer license.
+        On Windows, use a raw string literal (e.g. r'C:\path\to\file').
+    work_path : str
+        The path to the working directory. By default, it is home directory (usually the user directory).
+        On Windows, use a raw string literal (e.g. r'C:\path\to\file').
+    participant_label : str
+        The subject ID.
+    bids_validation : bool
+        Whether to perform BIDS validation.
+    nthreads : int
+        The number of threads to use.
+    output_spaces : str
+        The output spaces.
+    fs_recon_all : bool
+        Whether to run freesurfer's recon-all.
+    niprep_wrapper : bool
+        Whether to use niprep's wrapper.
+    system : str
+        The operating system system. By default, determined automatically with `platform.system()`.
+
+    Returns
+    -------
+    str
+        Parsed fmriprep command.
+    """
+    
+    fs_recon_all = '--fs-no-reconall' if fs_recon_all else ''
+    skip_bids_validation = '--skip-bids-validation' if skip_bids_validation else ''
+    task = '' if task == None else f'--task-id {task}'
+
+    if not niprep_wrapper:
+        if system == 'Windows':
+            data_path = parse_path_windows_docker(data_path)
+            fmriprep_path = parse_path_windows_docker(fmriprep_path)
+            fs_license_path = parse_path_windows_docker(fs_license_path)
+            work_path = parse_path_windows_docker(work_path)
+        fmriprep_command = f"""
+            docker run -ti --rm -v {data_path}:/data:ro \
+                -v {fmriprep_path}:/out \
+                -v {work_path}:/work \
+                -v {fs_license_path}:/license \
+                nipreps/fmriprep /data /out \
+                participant --participant-label {participant_label} \
+                -w /work \
+                {skip_bids_validation} \
+                {fs_recon_all} \
+                --fs-license-file /license \
+                --mem_mb {mem_mb} \
+                --output-spaces {output_spaces} \
+                --nthreads {nthreads}
+            """
+    else:
+        export_fmriprep_path = r'setx PATH "%USERPROFILE%\.local\bin;%PATH%' if system == 'Windows' else 'export PATH=$HOME/.local/bin:$PATH'
+        fmriprep_command = f"""
+        {export_fmriprep_path}
+        FS_LICENSE={fs_license_path}
+        fmriprep-docker {data_path} {fmriprep_path} \
+            participant --participant-label {participant_label} \
+            {skip_bids_validation} \
+            --fs-license-file $FS_LICENSE \
+            {fs_recon_all} \
+            {task} \
+            --stop-on-first-crash \
+            --mem_mb {mem_mb} \
+            --output-spaces {output_spaces} \
+            -w {work_path} \
+            --nthreads {nthreads}
+        """
+
+    return fmriprep_command
+
 
 def z_transform_conn_matrix(conn_matrix):
     """
@@ -79,85 +167,64 @@ class RawDataset():
         self._subjects = None
     
 
-    def docker_fmriprep(self, subject, fs_license_path, nthreads, skip_bids_validation = True, fs_reconall = False, mem = 5000, task = 'rest'):
+    def docker_fmriprep(self, subject, fs_license_path, nthreads, skip_bids_validation = True, fs_recon_all = False, mem_mb = 5000, task = 'rest', niprep_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', work_path = os.path.expanduser('~')):
 
-        """
+        r"""
         Runs the fMRIprep pipeline in a Docker container for a given subject.
 
         Parameters
         ----------
         subject : str
             The label of the participant to process.
+        fs_license_path : str
+            The path to the (full) FreeSurfer license file.
+            OOn Windows, use a raw string literal (e.g. r'C:\path\to\file').
+        nthreads : int
+            The number of threads to use for processing.
         skip_bids_validation : bool, optional
             Whether to skip BIDS validation. Default is True.
-        fs_license_path : str, optional
-            The path to the (full) FreeSurfer license file
-        fs_reconall : bool, optional
-            Whether to run FreeSurfer's recon-all. Default is True.
-        mem : int, optional
+        fs_recon_all : bool, optional
+            Whether to run FreeSurfer's recon-all. Default is False.
+        mem_mb : int, optional
             The amount of memory to allocate to the Docker container, in MB. Default is 5000.
         task : str, optional
             The ID of the task to preprocess, or None to preprocess all tasks. Default is 'rest'.
+        niprep_wrapper : bool, optional
+            Whether to use the Nipype workflow wrapper. Default is True.
+        output_spaces : str, optional
+            The list of output spaces to resample anatomical and functional images to. Default is 'MNI152NLin2009cAsym:res-2'.
+            See https://fmriprep.org/en/stable/outputs.html#outputs for a list of available output spaces.
+        work_path : str, optional
+            The path to the working directory. Default is the user's home directory.
+            On Windows, use a raw string literal (e.g. r'C:\path\to\file').
 
         Returns
         -------
         None
+
+        Raises
+        ------
+        FileNotFoundError
+            If the FreeSurfer license file is not found.
+
+        See Also
+        --------
+        https://fmriprep.org/en/stable/usage.html#command-line-arguments
+        https://fmriprep.org/en/stable/outputs.html#outputs
         """
+        data_path = self.BIDS_path
+        fmriprep_path = os.path.join(data_path, 'derivatives', 'fmriprep')
+        if not os.path.exists(fmriprep_path):
+            os.makedirs(fmriprep_path)
     
-        skip_bids_validation = '--skip-bids-validation' if skip_bids_validation else ''
-        fs_reconall = '' if fs_reconall else '--fs-no-reconall'
-        if task != None:
-            task = f'--task-id {task}'
-        else:
-            task = ''
-        if platform.system() == 'Windows': # check how many threads available
-            data_path = parse_path_windows_docker(rf'{self.BIDS_path}≠')
-            fs_license_path = parse_path_windows_docker(fs_license_path)
-            homepath = os.environ['HOMEPATH']
-            homepath = parse_path_windows_docker(rf'{homepath}')
-            fmriprep_path = os.path.join(data_path, 'derivatives', 'fmriprep')
-            if not os.path.exists(fmriprep_path):
-                os.makedirs(fmriprep_path)
-            fmriprep_bash = f"""
-            docker run -ti --rm -v {data_path}:/data:ro \
-                -v {fmriprep_path}:/out \
-                -v {homepath}:/work \
-                -v {fs_license_path}:/license \
-                nipreps/fmriprep:23.0.2 /data /out/fmriprep-23.0.2 \
-                participant --participant-label {subject} \
-                -w /work \
-                {skip_bids_validation} \
-                {fs_reconall} \
-                --fs-license-file /license \
-                --output-spaces MNI152NLin2009cAsym:res-2 \
-                --nthreads {nthreads}
-            """
-        else:
-            data_path = rf'{self.BIDS_path}' # Do Docker
-            fmriprep_path = os.path.join(data_path, 'derivatives', 'fmriprep')
-            if not os.path.exists(fmriprep_path):
-                os.makedirs(fmriprep_path)
-            fmriprep_bash = f"""
-            export PATH="$HOME/.local/bin:$PATH"
-            mkdir -p {fmriprep_path}
-            FS_LICENSE={fs_license_path}
-            fmriprep-docker {data_path} {fmriprep_path} \
-                participant --participant-label {subject} \
-                {skip_bids_validation} \
-                --fs-license-file $FS_LICENSE \
-                {fs_reconall} \
-                {task} \
-                --stop-on-first-crash \
-                --mem_mb {mem} \
-                --output-spaces MNI152NLin2009cAsym:res-2 -w \
-                $HOME \
-                --nthreads {nthreads}
-            """
-        if not os.path.exists(f"{self.BIDS_path}/fmriprep_logs"):
-            os.makedirs(f"{self.BIDS_path}/fmriprep_logs")
-        log_file = f"{self.BIDS_path}/fmriprep_logs/fmriprep_logs_sub-{subject}.txt"
+        fmrirep_command = parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, subject, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper, mem_mb)
+
+        log_dir = f"{data_path}/fmriprep_logs"
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        log_file = f"{log_dir}/fmriprep_logs_sub-{subject}.txt"
         with open(log_file, "w") as file:
-            process = sp.Popen(["bash", "-c", fmriprep_bash], stdout=file, stderr=file, universal_newlines=True)
+            process = sp.Popen(["bash", "-c", fmrirep_command], stdout=file, stderr=file, universal_newlines=True)
 
             while process.poll() is None:
                 time.sleep(0.1)
