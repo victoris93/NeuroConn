@@ -43,7 +43,7 @@ def parse_path_windows_docker(path):
         path = '/' + path[0].lower() + '/' + path[2:]
     return path
 
-def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper,mem_mb, system = platform.system()):
+def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper,mem_mb, sloppy = False, system = platform.system()):
     r"""
     Parses the arguments for the fmriprep docker command.
 
@@ -82,9 +82,10 @@ def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path,
         Parsed fmriprep command.
     """
     
-    fs_recon_all = '--fs-no-reconall' if fs_recon_all else ''
+    fs_recon_all = '--fs-no-reconall' if not fs_recon_all else ''
     skip_bids_validation = '--skip-bids-validation' if skip_bids_validation else ''
     task = '' if task == None else f'--task-id {task}'
+    sloppy = '--sloppy' if sloppy else ''
 
     if not niprep_wrapper:
         if system == 'Windows':
@@ -105,26 +106,16 @@ def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path,
                 --fs-license-file /license \
                 --mem_mb {mem_mb} \
                 --output-spaces {output_spaces} \
+                {sloppy} \
                 --nthreads {nthreads}
             """
     else:
-        export_fmriprep_path = r'setx PATH "%USERPROFILE%\.local\bin;%PATH%' if system == 'Windows' else 'export PATH=$HOME/.local/bin:$PATH'
+        export_fmriprep_path = '' if system == 'Windows' else 'export PATH=$HOME/.local/bin:$PATH'
         fmriprep_command = f"""
         {export_fmriprep_path}
-        FS_LICENSE={fs_license_path}
-        fmriprep-docker {data_path} {fmriprep_path} \
-            participant --participant-label {participant_label} \
-            {skip_bids_validation} \
-            --fs-license-file $FS_LICENSE \
-            {fs_recon_all} \
-            {task} \
-            --stop-on-first-crash \
-            --mem_mb {mem_mb} \
-            --output-spaces {output_spaces} \
-            -w {work_path} \
-            --nthreads {nthreads}
+        fmriprep-docker {data_path} {fmriprep_path} participant --participant-label {participant_label} {skip_bids_validation} --fs-license-file {fs_license_path} {fs_recon_all} {task} --stop-on-first-crash --mem_mb {mem_mb} --output-spaces {output_spaces} -w {work_path} --nthreads {nthreads} {sloppy}
         """
-
+    print('Running fmriprep command: ', fmriprep_command)
     return fmriprep_command
 
 
@@ -167,7 +158,7 @@ class RawDataset():
         self._subjects = None
     
 
-    def docker_fmriprep(self, subject, fs_license_path, nthreads, skip_bids_validation = True, fs_recon_all = False, mem_mb = 5000, task = 'rest', niprep_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', work_path = os.path.expanduser('~')):
+    def docker_fmriprep(self, subject, fs_license_path, nthreads, skip_bids_validation = True, fs_recon_all = False, mem_mb = 5000, task = 'rest', niprep_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', work_path = os.path.expanduser('~'), sloppy = False):
 
         r"""
         Runs the fMRIprep pipeline in a Docker container for a given subject.
@@ -217,14 +208,17 @@ class RawDataset():
         if not os.path.exists(fmriprep_path):
             os.makedirs(fmriprep_path)
     
-        fmrirep_command = parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, subject, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper, mem_mb)
+        fmrirep_command = parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, subject, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper, mem_mb, sloppy)
 
         log_dir = f"{data_path}/fmriprep_logs"
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         log_file = f"{log_dir}/fmriprep_logs_sub-{subject}.txt"
         with open(log_file, "w") as file:
-            process = sp.Popen(["bash", "-c", fmrirep_command], stdout=file, stderr=file, universal_newlines=True)
+            if platform.system() == "Windows":
+                process = sp.Popen(fmrirep_command, shell = True, stdout=file, stderr=file, universal_newlines=True)
+            else:
+                process = sp.Popen(["bash", "-c", fmrirep_command], stdout=file, stderr=file, universal_newlines=True)
 
             while process.poll() is None:
                 time.sleep(0.1)
