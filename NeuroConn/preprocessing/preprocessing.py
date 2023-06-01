@@ -321,10 +321,10 @@ class FmriPreppedDataSet(RawDataset):
             for session_name in session_names:
                 session_dir = os.path.join(subject_dir, f'ses-{session_name}', 'func')
                 if os.path.exists(session_dir):
-                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith('MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')])
+                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith('preproc_bold.nii.gz')])
         else:
             subject_dir = os.path.join(subject_dir, 'func')
-            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith('MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz')] #sub-01_task-rest_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz
+            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith('preproc_bold.nii.gz')] #sub-01_task-rest_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz
         return ts_paths
     
     def get_sessions(self, subject):
