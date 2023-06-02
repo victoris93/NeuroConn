@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+import os
 
 with open('README.md', 'r') as f:
     long_description = f.read()
@@ -34,5 +35,7 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
     ],
+    include_package_data=True,
+    package_data={'': [os.path.join(os.path.dirname(__file__), 'NeuroConn', 'gradient', 'margulies_grads_schaefer1000.npy')]},
     keywords='fmriprep, BIDS, connectivity, gradients, dispersion',
 )

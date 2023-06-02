@@ -66,7 +66,7 @@ def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', 
     approach : str, optional
         The approach to use. Default is 'pca'.
     from_mat : bool, optional
-        Whether to load the data from a .mat file. Default is True.
+        Whether to load an existing connectivity matrix. Default is True.
     aligned : bool, optional
         Whether to align the gradients to the Margulies et al. (2016) gradients. Default is True.
     save : bool, optional  
