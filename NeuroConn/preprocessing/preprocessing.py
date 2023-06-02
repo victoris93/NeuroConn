@@ -43,7 +43,7 @@ def parse_path_windows_docker(path):
         path = '/' + path[0].lower() + '/' + path[2:]
     return path
 
-def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper,mem_mb, sloppy = False, system = platform.system()):
+def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, skip_bids_validation = True, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper,mem_mb, sloppy = False, system = platform.system()):
     r"""
     Parses the arguments for the fmriprep docker command.
 
@@ -52,7 +52,7 @@ def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path,
     data_path : str
         The path to the data.
         On Windows, use a raw string literal (e.g. r'C:\path\to\file').
-    fnriprep_path : str
+    fmriprep_path : str
         The path to the fmriprep output directory. By default, the fmriprep output directory is data_path/derivatives/fmriprep.
         On Windows, use a raw string literal (e.g. r'C:\path\to\file').
     fs_license_path : str
@@ -63,16 +63,22 @@ def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path,
         On Windows, use a raw string literal (e.g. r'C:\path\to\file').
     participant_label : str
         The subject ID.
-    bids_validation : bool
-        Whether to perform BIDS validation.
+    skip_bids_validation : bool, optional
+        Whether to perform BIDS validation. Default is True.
     nthreads : int
         The number of threads to use.
     output_spaces : str
         The output spaces.
     fs_recon_all : bool
         Whether to run freesurfer's recon-all.
+    task : str, optional
+        The name of the task to use. Default is 'rest'.
     niprep_wrapper : bool
         Whether to use niprep's wrapper.
+    mem_mb : int, optional
+        The amount of memory to allocate to the Docker container, in MB. Default is 5000.
+    sloppy : bool, optional
+        Whether to use a lower rendering power. Default is True.
     system : str
         The operating system system. By default, determined automatically with `platform.system()`.
 
@@ -134,10 +140,10 @@ def z_transform_conn_matrix(conn_matrix):
         The transformed connectivity matrix.
     """
     conn_matrix = np.arctanh(conn_matrix) # Fisher's z transform
-    if np.isnan(conn_matrix).any(): # remove nans and infs in the matrix
+    if np.isnan(conn_matrix).any(): # remove nans
         nan_indices = np.where(np.isnan(conn_matrix))
         conn_matrix[nan_indices] = .0000000001
-    if np.isinf(conn_matrix).any():
+    if np.isinf(conn_matrix).any(): # remove inf
         inf_indices = np.where(np.isinf(conn_matrix))
         conn_matrix[inf_indices] = 1
     return conn_matrix
@@ -165,11 +171,13 @@ class RawDataset():
 
         Parameters
         ----------
+        self :
+
         subject : str
             The label of the participant to process.
         fs_license_path : str
             The path to the (full) FreeSurfer license file.
-            OOn Windows, use a raw string literal (e.g. r'C:\path\to\file').
+            On Windows, use a raw string literal (e.g. r'C:\path\to\file').
         nthreads : int
             The number of threads to use for processing.
         skip_bids_validation : bool, optional
@@ -179,7 +187,7 @@ class RawDataset():
         mem_mb : int, optional
             The amount of memory to allocate to the Docker container, in MB. Default is 5000.
         task : str, optional
-            The ID of the task to preprocess, or None to preprocess all tasks. Default is 'rest'.
+            The name of the task to use. Default is 'rest'.
         niprep_wrapper : bool, optional
             Whether to use the Nipype workflow wrapper. Default is True.
         output_spaces : str, optional
@@ -188,6 +196,8 @@ class RawDataset():
         work_path : str, optional
             The path to the working directory. Default is the user's home directory.
             On Windows, use a raw string literal (e.g. r'C:\path\to\file').
+        sloppy : bool, optional
+            Whether to use a lower rendering power. Default is True.
 
         Returns
         -------
@@ -277,6 +287,8 @@ class FmriPreppedDataSet(RawDataset):
         """
         Finds the subdirectory containing the subject data.
 
+        self :
+
         Returns
         -------
         str
@@ -304,10 +316,12 @@ class FmriPreppedDataSet(RawDataset):
         """
         Parameters
         ----------
+        self :
+        
         subject : str
             The subject ID.
-        task : str
-            The task name.
+        task : str, optional
+            The ID of the task to preprocess, or None to preprocess all tasks. Default is 'rest'.
         Returns
         -------
         ts_paths : list
@@ -333,6 +347,8 @@ class FmriPreppedDataSet(RawDataset):
 
         Parameters
         ----------
+        self :
+
         subject : str
             The label of the subject to retrieve session names for.
 
@@ -353,10 +369,12 @@ class FmriPreppedDataSet(RawDataset):
         """
         Parameters
         ----------
+        self : 
+
         dataframe : pandas.DataFrame
             The dataframe containing the confounds.
-        pick_confounds : list or numpy.ndarray
-            The confounds to be picked from the dataframe.
+        pick_confounds : list or numpy.ndarray, optional
+            The confounds to be picked from the dataframe. If None, the default confounds will be used. Default is None.
         Returns
         -------
         df_no_nans : pandas.DataFrame
@@ -377,10 +395,12 @@ class FmriPreppedDataSet(RawDataset):
 
         Parameters
         ----------
+        self :
+
         subject : str
             The ID of the subject.
-        task : str
-            The name of the task.
+        task : str, optional
+            The name of the task to use. Default is 'rest'.
         no_nans : bool, optional
             Whether to impute NaNs in the confounds. Default is True.
         pick_confounds : list or numpy.ndarray, optional
@@ -430,12 +450,14 @@ class FmriPreppedDataSet(RawDataset):
         """
         Parameters
         ----------
+        self :
+
         subject : str
             subject id
         parcellation : str
             parcellation to use
-        task : str
-            task to use
+        task : str, optional
+            The name of the task to use. Default is 'rest'.
         n_parcels : int
             number of parcels to use
         gsr : bool  
@@ -513,6 +535,8 @@ class FmriPreppedDataSet(RawDataset):
 
         Parameters
         ----------
+        self :
+        
         subject : str
             The ID of the subject to compute the connectivity matrix for.
         subject_ts : str, optional
