@@ -43,7 +43,7 @@ def parse_path_windows_docker(path):
         path = '/' + path[0].lower() + '/' + path[2:]
     return path
 
-def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, skip_bids_validation = True, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper,mem_mb, sloppy = False, system = platform.system()):
+def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, skip_bids_validation = True, nthreads, output_spaces, fs_recon_all, task, nipreps_wrapper,mem_mb, sloppy = False, system = platform.system()):
     r"""
     Parses the arguments for the fmriprep docker command.
 
@@ -71,9 +71,9 @@ def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path,
         The output spaces.
     fs_recon_all : bool
         Whether to run freesurfer's recon-all.
-    task : str, optional
-        The name of the task to use. Default is 'rest'.
-    niprep_wrapper : bool
+    task : str
+        The name of the task to use. Default is 'rest'. If None, all tasks are preprcessed.
+    nipreps_wrapper : bool
         Whether to use niprep's wrapper.
     mem_mb : int, optional
         The amount of memory to allocate to the Docker container, in MB. Default is 5000.
@@ -93,7 +93,7 @@ def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path,
     task = '' if task == None else f'--task-id {task}'
     sloppy = '--sloppy' if sloppy else ''
 
-    if not niprep_wrapper:
+    if not nipreps_wrapper:
         if system == 'Windows':
             data_path = parse_path_windows_docker(data_path)
             fmriprep_path = parse_path_windows_docker(fmriprep_path)
@@ -140,10 +140,10 @@ def z_transform_conn_matrix(conn_matrix):
         The transformed connectivity matrix.
     """
     conn_matrix = np.arctanh(conn_matrix) # Fisher's z transform
-    if np.isnan(conn_matrix).any(): # remove nans
+    if np.isnan(conn_matrix).any(): 
         nan_indices = np.where(np.isnan(conn_matrix))
         conn_matrix[nan_indices] = .0000000001
-    if np.isinf(conn_matrix).any(): # remove inf
+    if np.isinf(conn_matrix).any(): 
         inf_indices = np.where(np.isinf(conn_matrix))
         conn_matrix[inf_indices] = 1
     return conn_matrix
@@ -164,15 +164,13 @@ class RawDataset():
         self._subjects = None
     
 
-    def docker_fmriprep(self, subject, fs_license_path, nthreads, skip_bids_validation = True, fs_recon_all = False, mem_mb = 5000, task = 'rest', niprep_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', work_path = os.path.expanduser('~'), sloppy = False):
+    def docker_fmriprep(self, subject, fs_license_path, nthreads, skip_bids_validation = True, fs_recon_all = False, mem_mb = 5000, task = 'rest', nipreps_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', work_path = os.path.expanduser('~'), sloppy = False):
 
         r"""
         Runs the fMRIprep pipeline in a Docker container for a given subject.
 
         Parameters
         ----------
-        self :
-
         subject : str
             The label of the participant to process.
         fs_license_path : str
@@ -187,8 +185,8 @@ class RawDataset():
         mem_mb : int, optional
             The amount of memory to allocate to the Docker container, in MB. Default is 5000.
         task : str, optional
-            The name of the task to use. Default is 'rest'.
-        niprep_wrapper : bool, optional
+            The name of the task to use. Default is 'rest'. If None, all tasks are preprocessed.
+        nipreps_wrapper : bool, optional
             Whether to use the Nipype workflow wrapper. Default is True.
         output_spaces : str, optional
             The list of output spaces to resample anatomical and functional images to. Default is 'MNI152NLin2009cAsym:res-2'.
@@ -218,7 +216,7 @@ class RawDataset():
         if not os.path.exists(fmriprep_path):
             os.makedirs(fmriprep_path)
     
-        fmrirep_command = parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, subject, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, niprep_wrapper, mem_mb, sloppy)
+        fmrirep_command = parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, subject, skip_bids_validation, nthreads, output_spaces, fs_recon_all, task, nipreps_wrapper, mem_mb, sloppy)
 
         log_dir = f"{data_path}/fmriprep_logs"
         if not os.path.exists(log_dir):
@@ -287,8 +285,6 @@ class FmriPreppedDataSet(RawDataset):
         """
         Finds the subdirectory containing the subject data.
 
-        self :
-
         Returns
         -------
         str
@@ -316,12 +312,11 @@ class FmriPreppedDataSet(RawDataset):
         """
         Parameters
         ----------
-        self :
-        
         subject : str
             The subject ID.
-        task : str, optional
-            The ID of the task to preprocess, or None to preprocess all tasks. Default is 'rest'.
+        task : str
+            The ID of the task to preprocess. Default is 'rest'.
+
         Returns
         -------
         ts_paths : list
@@ -347,8 +342,6 @@ class FmriPreppedDataSet(RawDataset):
 
         Parameters
         ----------
-        self :
-
         subject : str
             The label of the subject to retrieve session names for.
 
@@ -369,12 +362,11 @@ class FmriPreppedDataSet(RawDataset):
         """
         Parameters
         ----------
-        self : 
-
         dataframe : pandas.DataFrame
             The dataframe containing the confounds.
         pick_confounds : list or numpy.ndarray, optional
             The confounds to be picked from the dataframe. If None, the default confounds will be used. Default is None.
+
         Returns
         -------
         df_no_nans : pandas.DataFrame
@@ -395,11 +387,9 @@ class FmriPreppedDataSet(RawDataset):
 
         Parameters
         ----------
-        self :
-
         subject : str
             The ID of the subject.
-        task : str, optional
+        task : str
             The name of the task to use. Default is 'rest'.
         no_nans : bool, optional
             Whether to impute NaNs in the confounds. Default is True.
@@ -450,18 +440,17 @@ class FmriPreppedDataSet(RawDataset):
         """
         Parameters
         ----------
-        self :
-
         subject : str
             subject id
         parcellation : str
             parcellation to use
-        task : str, optional
+        task : str
             The name of the task to use. Default is 'rest'.
         n_parcels : int
             number of parcels to use
         gsr : bool  
             whether to use global signal regression
+            
         Returns
         -------
         parc_ts_list : list
@@ -535,8 +524,6 @@ class FmriPreppedDataSet(RawDataset):
 
         Parameters
         ----------
-        self :
-        
         subject : str
             The ID of the subject to compute the connectivity matrix for.
         subject_ts : str, optional
