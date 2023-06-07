@@ -175,6 +175,12 @@ class RawDataset():
         self._data_description = None
         self._subjects = None
     
+    def _bold_tr(self, subject, task):
+        bold_file_path = os.path.join(self.BIDS_path, f'sub-{subject}', 'func', f'sub-{subject}_task-{task}_bold.nii.gz')
+        img = nib.load(bold_file_path)
+        bold_tr = img.header.get_zooms()[-1]
+        return bold_tr
+
 
     def docker_fmriprep(self, subject, fs_license_path, nthreads, fs_recon_all = False, mem_mb = 5000, task = 'rest', nipreps_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', skip_bids_validation = True, work_path = os.path.expanduser('~'), sloppy = False):
 
@@ -516,8 +522,9 @@ class FmriPreppedDataSet(RawDataset):
         """
         parc_ts_list = self.parcellate(subject, parcellation, task, n_parcels, gsr, output_space)
         clean_ts_array =[]
+        bold_tr = self._bold_tr(subject, task)
         for parc_ts in parc_ts_list:
-            clean_ts = signal.clean(parc_ts, t_r = 2, low_pass=0.08, high_pass=0.01, standardize='zscore_sample', detrend=True)
+            clean_ts = signal.clean(parc_ts, t_r = bold_tr, low_pass=0.08, high_pass=0.01, standardize='zscore_sample', detrend=True)
             print("Shape of clean_ts: ", clean_ts.shape)
             clean_ts_array.append(clean_ts[10:]) # discarding first 10 volumes
         clean_ts_array = np.array(clean_ts_array)
