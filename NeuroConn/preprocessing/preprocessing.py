@@ -55,7 +55,7 @@ def parse_path_windows_docker(path):
         path = '/' + path[0].lower() + '/' + path[2:]
     return path
 
-def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, skip_bids_validation = True, nthreads, output_spaces, fs_recon_all, task, nipreps_wrapper,mem_mb, sloppy = False, system = platform.system()):
+def parse_fmriprep_command(data_path, fmriprep_path, fs_license_path, work_path, participant_label, nthreads, output_spaces, fs_recon_all, task, nipreps_wrapper,mem_mb,skip_bids_validation = True, sloppy = False, system = platform.system()):
     r"""
     Parses the arguments for the fmriprep docker command.
 
@@ -176,7 +176,7 @@ class RawDataset():
         self._subjects = None
     
 
-    def docker_fmriprep(self, subject, fs_license_path, nthreads, skip_bids_validation = True, fs_recon_all = False, mem_mb = 5000, task = 'rest', nipreps_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', work_path = os.path.expanduser('~'), sloppy = False):
+    def docker_fmriprep(self, subject, fs_license_path, nthreads, fs_recon_all = False, mem_mb = 5000, task = 'rest', nipreps_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', skip_bids_validation = True, work_path = os.path.expanduser('~'), sloppy = False):
 
         r"""
         Runs the fMRIprep pipeline in a Docker container for a given subject.
