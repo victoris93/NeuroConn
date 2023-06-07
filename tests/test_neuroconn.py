@@ -34,8 +34,8 @@ def test_clean_signal_shape():
 def test_conn_matrix():
     subject = '52'
     fmriprepped_data = FmriPreppedDataSet(example_data)
-    conn_matrix = fmriprepped_data.get_conn_matrix(subject, task = "rest", save = True)
-    path_conn_matrix = os.path.join(f'{fmriprepped_data.data_path}', 'clean_data', f'sub-{subject}', 'func', f'conn-matrix-sub-{subject}-rest-schaefer1000.npy')
+    conn_matrix = fmriprepped_data.get_conn_matrix(subject, task = "rest", save = True, z_transformed=True)
+    path_conn_matrix = os.path.join(f'{fmriprepped_data.data_path}', 'clean_data', f'sub-{subject}', 'func', f'z-conn-matrix-sub-{subject}-rest-schaefer1000.npy')
 
     assert conn_matrix.shape[0] == 1, "First dimension should be 2 (n_sessions)"
     assert conn_matrix.shape[1] == 1000, "Second dimension should be 1000 (n_parcels)"
