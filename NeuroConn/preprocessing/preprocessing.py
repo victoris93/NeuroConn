@@ -12,6 +12,18 @@ from sklearn.impute import SimpleImputer
 import subprocess as sp
 import platform
 
+output_spaces = {
+    "anat": "T1w",
+    "MNI152NLin6Asym": "MNI152NLin6Asym",
+    "MNI152NLin6Asym:res-2": "MNI152NLin6Asym_res-2",
+    "MNI152NLin6Asym:res-1": "MNI152NLin6Asym_res-1",
+    "MNI152NLin2009cAsym:res-native":"MNI152NLin2009cAsym_res-native",
+    "MNI152NLin6Asym":"MNI152NLin6Asym",
+    "MNI152NLin2009cAsym":"MNI152NLin2009cAsym",
+    "fsaverage":"fsaverage",
+    "MNI152NLin2009cAsym:res-2":"MNI152NLin2009cAsym_res-2"
+}
+
 def parse_path_windows_docker(path):
     r"""
     Parses a path in Windows format to a path in Docker format.
@@ -299,7 +311,7 @@ class FmriPreppedDataSet(RawDataset):
                         self.data_path = os.path.join(self.data_path, subdir)
         return self.data_path
     
-    def get_ts_paths(self, subject, task): # needs to be adapted to multiple sessions
+    def get_ts_paths(self, subject, task, output_space = None): # needs to be adapted to multiple sessions
         #numpy-style docstring
         """
         Parameters
@@ -313,7 +325,10 @@ class FmriPreppedDataSet(RawDataset):
         ts_paths : list
             A list of paths to the time series files.
         """
-        
+        if output_space == None:
+            output_space = ''
+        else:
+            output_space = output_spaces[output_space]
         subject_dir = os.path.join(self.data_path, f'sub-{subject}')
         session_names = self.get_sessions(subject)
         ts_paths = []
@@ -321,10 +336,10 @@ class FmriPreppedDataSet(RawDataset):
             for session_name in session_names:
                 session_dir = os.path.join(subject_dir, f'ses-{session_name}', 'func')
                 if os.path.exists(session_dir):
-                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith('preproc_bold.nii.gz')])
+                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith(f'{output_space}_desc-preproc_bold.nii.gz')])
         else:
             subject_dir = os.path.join(subject_dir, 'func')
-            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith('preproc_bold.nii.gz')] #sub-01_task-rest_space-MNI152NLin2009cAsym_res-2_desc-preproc_bold.nii.gz
+            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith(f'{output_space}_desc-preproc_bold.nii.gz')] 
         return ts_paths
     
     def get_sessions(self, subject):
@@ -426,7 +441,7 @@ class FmriPreppedDataSet(RawDataset):
 
         return confound_list
     
-    def parcellate(self, subject, parcellation = 'schaefer',task ="rest", n_parcels = 1000, gsr = False): # adapt to multiple sessions
+    def parcellate(self, subject, parcellation = 'schaefer',task ="rest", n_parcels = 1000, gsr = False, output_space = None): # adapt to multiple sessions
         """
         Parameters
         ----------
@@ -451,7 +466,7 @@ class FmriPreppedDataSet(RawDataset):
         masker =  NiftiLabelsMasker(labels_img=atlas.maps, standardize=True, memory='nilearn_cache', verbose=5)
 
         parc_ts_list = []
-        subject_ts_paths = self.get_ts_paths(subject, task)
+        subject_ts_paths = self.get_ts_paths(subject, task, output_space = output_space)
         confounds = self.get_confounds(subject, task)
         for subject_ts, subject_confounds in zip(subject_ts_paths, confounds):
             if gsr == False:
@@ -462,7 +477,7 @@ class FmriPreppedDataSet(RawDataset):
                 parc_ts_list.append(parc_ts)
         return parc_ts_list
     
-    def clean_signal(self, subject, task="rest", parcellation='schaefer', n_parcels=1000, gsr=False, save = False, save_to = None): # add a save option + path
+    def clean_signal(self, subject, task="rest", parcellation='schaefer', n_parcels=1000, gsr=False, save = False, save_to = None, output_space = None): # add a save option + path
         """
         Cleans the time series for a given subject using a specified parcellation.
 
@@ -488,13 +503,13 @@ class FmriPreppedDataSet(RawDataset):
         np.ndarray
             The cleaned time series of shape (n_sessions, n_parcels, n_volumes).
         """
-        parc_ts_list = self.parcellate(subject, parcellation, task, n_parcels, gsr)
+        parc_ts_list = self.parcellate(subject, parcellation, task, n_parcels, gsr, output_space)
         clean_ts_array =[]
         for parc_ts in parc_ts_list:
-            clean_ts = signal.clean(parc_ts, t_r = 2, low_pass=0.08, high_pass=0.01, standardize=True, detrend=True)
+            clean_ts = signal.clean(parc_ts, t_r = 2, low_pass=0.08, high_pass=0.01, standardize='zscore_sample', detrend=True)
+            print("Shape of clean_ts: ", clean_ts.shape)
             clean_ts_array.append(clean_ts[10:]) # discarding first 10 volumes
         clean_ts_array = np.array(clean_ts_array)
-        print(clean_ts_array.shape)
         if save == True:
             if save_to is None:
                 save_dir = os.path.join(f'{self.data_path}', 'clean_data', f'sub-{subject}', 'func')
@@ -503,11 +518,10 @@ class FmriPreppedDataSet(RawDataset):
                 save_to = os.path.join(f'{save_dir}', f'clean-ts-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
             else:
                 save_to = os.path.join(save_to, f'clean-ts-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
-            print(save_to)
             np.save(save_to, clean_ts_array)
         return clean_ts_array
     
-    def get_conn_matrix(self, subject, subject_ts = None, parcellation = 'schaefer', task = 'rest', concat_ts = False, n_parcels = 1000, gsr = False, z_transformed = True, save = False, save_to = None):
+    def get_conn_matrix(self, subject, subject_ts = None, parcellation = 'schaefer', task = 'rest', concat_ts = False, n_parcels = 1000, gsr = False, z_transformed = True, save = False, save_to = None, output_space = None):
         """
         Computes the connectivity matrix for a given subject.
 
@@ -539,8 +553,9 @@ class FmriPreppedDataSet(RawDataset):
         np.ndarray
             The connectivity matrix of shape (n_sessions, n_parcels, n_parcels).
         """
+        z_suffix = ''
         if subject_ts is None:
-            subj_ts_array = self.clean_signal(subject, task, parcellation, n_parcels, gsr)
+            subj_ts_array = self.clean_signal(subject, task, parcellation, n_parcels, gsr, output_space = output_space)
         else:
             subj_ts_array = np.load(subject_ts)
         if concat_ts == True:
@@ -548,20 +563,22 @@ class FmriPreppedDataSet(RawDataset):
             conn_matrix = np.corrcoef(subj_ts_array.T)
             if z_transformed == True:
                 conn_matrix = z_transform_conn_matrix(conn_matrix)
+                z_suffix = 'z-'
         else:
             conn_matrix = np.zeros((subj_ts_array.shape[0], n_parcels, n_parcels))
             for i, subj_ts in enumerate(subj_ts_array):
                 conn_matrix[i] = np.corrcoef(subj_ts.T)
                 if z_transformed == True:
                     conn_matrix[i] = z_transform_conn_matrix(conn_matrix[i])
+                    z_suffix = 'z-'
         if save == True:
             if save_to is None:
                 save_dir = os.path.join(f'{self.data_path}', 'clean_data', f'sub-{subject}', 'func')
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
-                save_to = os.path.join(save_dir, f'conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
+                save_to = os.path.join(save_dir, f'{z_suffix}conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
             else:
-                save_to = os.path.join(save_to, f'conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
+                save_to = os.path.join(save_to, f'{z_suffix}conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
 
             self.subject_conn_paths[subject] = save_to
 
