@@ -325,7 +325,7 @@ class FmriPreppedDataSet(RawDataset):
                         self.data_path = os.path.join(self.data_path, subdir)
         return self.data_path
     
-    def get_ts_paths(self, subject, task, output_space = None): # needs to be adapted to multiple sessions
+    def get_ts_paths(self, subject, task, output_space = None): 
         #numpy-style docstring
         """
         Parameters

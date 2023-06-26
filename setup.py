@@ -36,6 +36,8 @@ setup(
         'Programming Language :: Python :: 3.9',
     ],
     include_package_data=True,
-    package_data={'': [os.path.join(os.path.dirname(__file__), 'NeuroConn', 'gradient', 'margulies_grads_schaefer1000.npy')]},
+    package_data={'': [os.path.join(os.path.dirname(__file__), 'NeuroConn', 'gradient', 'margulies_grads_schaefer1000.npy'),
+                       os.path.join(os.path.dirname(__file__), 'NeuroConn', 'gradient', 'hcp_grads_schaefer1000_pearson_95th.npy'),
+                       os.path.join(os.path.dirname(__file__), 'NeuroConn', 'gradient', 'hcp_grads_schaefer1000_pearson_95th.npy')]},
     keywords='fmriprep, BIDS, connectivity, gradients, dispersion',
 )

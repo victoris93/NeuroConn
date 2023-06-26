@@ -8,20 +8,27 @@ from ..preprocessing.preprocessing import FmriPreppedDataSet
 import sys
 import os
 
-path_margulies_grads = os.path.join(os.path.dirname(__file__), 'margulies_grads_schaefer1000.npy')
+align_refs = {
+"margulies2016": os.path.join(os.path.dirname(__file__), 'margulies_grads_schaefer1000.npy'),
+"hcp5": os.path.join(os.path.dirname(__file__), 'hcp_grads_schaefer1000_pearson_95th.npy'),
+"hcp10": os.path.join(os.path.dirname(__file__), 'hcp_grads_schaefer1000_pearson_90th.npy'),
+}
 
-def align_gradients(gradients, n_components, custom_ref = None, *args):
+
+def align_gradients(gradients, n_components, ref = 'hcp10', custom_ref = None, *args):
     """
     Aligns gradients to a reference set of gradients using Procrustes alignment.
 
     Parameters
     ----------
     gradients : str or numpy.ndarray
-        The gradients to align.
+        The gradients to align. If str, the path to the gradients. The gradients must be in the shape of (n_subjects, n_components, n_parcels).
     n_components : int
-        The number of components to use from the reference gradients.   
+        The number of components to use from the reference gradients.
+    ref : str, optional
+        The reference gradients to align to. Default is 'hcp10' which refers to the gradients computed from the group HCP matrix thresholded at 90%. Options: 'margulies2016', 'hcp5', 'hcp10'. For now, references are available for the Schaefer (2018) parcellation only (1000 parcels).
     custom_ref : str or numpy.ndarray, optional
-        The reference gradients to align to. If None, the default Margulies et al. (2016) gradients will be used. Default is None.
+        The reference gradients to align to if not HCP. If None, HCP gradients will be used. Default is None.
     *args :
         Additional arguments to pass to ProcrustesAlignment.
 
@@ -31,10 +38,13 @@ def align_gradients(gradients, n_components, custom_ref = None, *args):
         The aligned gradients.
     """
     if custom_ref is None:
-        path_margulies_grads = os.path.join(os.path.dirname(__file__), 'margulies_grads_schaefer1000.npy')
-        ref_gradients = np.load(path_margulies_grads)[:n_components]
+        ref = align_refs[ref]
+        ref_gradients = np.load(ref)[:n_components]
     else:
-        ref_gradients = np.load(custom_ref)
+        if isinstance(custom_ref, str):
+            ref_gradients = np.load(custom_ref)
+        else:
+            ref_gradients = custom_ref
     if isinstance(gradients, str):
         gradients = np.load(gradients)
     if len(gradients.shape) == 2:
@@ -43,7 +53,7 @@ def align_gradients(gradients, n_components, custom_ref = None, *args):
     aligned_gradients = np.array(Alignment.fit(gradients, ref_gradients.T).aligned_)
     return aligned_gradients
     
-def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', n_parcels = 1000, kernel = 'cosine', approach = 'pca', from_mat = True, aligned = True, save = True, save_to = None):
+def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', n_parcels = 1000, kernel = None, approach = 'pca', from_mat = True, aligned = True, save = True, save_to = None):
     """
     Computes gradients from the subject connectivity matrix.
 
