@@ -14,16 +14,16 @@ def test_subjects_attr():
 def test_subject():
     raw_data = RawDataset(example_data)
     subjects = raw_data.subjects
-    assert "52" in subjects, "The subject is not on the list"
+    assert "53" in subjects, "The subject is not on the list"
 
 def test_session_names():
-    subject = '52'
+    subject = '53'
     fmriprepped_data = FmriPreppedDataSet(example_data)
     session_names_sub1 = fmriprepped_data.get_sessions(subject)
     assert session_names_sub1 == []
 
 def test_clean_signal_shape():
-    subject = '52'
+    subject = '53'
     n_parcels = 1000
     fmriprepped_data = FmriPreppedDataSet(example_data)
     clean_ts_= np.asarray(fmriprepped_data.clean_signal(subject, task = "rest"))
@@ -32,7 +32,7 @@ def test_clean_signal_shape():
     assert clean_ts_.shape[2] == n_parcels, "Third dimension should be 1000 (n_parcels)"
 
 def test_conn_matrix():
-    subject = '52'
+    subject = '53'
     fmriprepped_data = FmriPreppedDataSet(example_data)
     conn_matrix = fmriprepped_data.get_conn_matrix(subject, task = "rest", save = True, z_transformed=True)
     path_conn_matrix = os.path.join(f'{fmriprepped_data.data_path}', 'clean_data', f'sub-{subject}', 'func', f'z-conn-matrix-sub-{subject}-rest-schaefer1000.npy')
@@ -44,7 +44,7 @@ def test_conn_matrix():
     assert os.path.exists(path_conn_matrix), "Matrix was not saved"
 
 def test_get_gradients():
-    gradients = get_gradients(example_data, '52', n_components = 10, task = "rest", aligned = False)
+    gradients = get_gradients(example_data, '53', n_components = 10, task = "rest", aligned = False)
     if len(gradients.shape) == 3:
         assert gradients.shape[0] == 1, "First dimension should be 1 (n_sessions)"
         assert gradients.shape[1] == 1000, "Second dimension should be 1000 (n_parcels)"
@@ -54,7 +54,7 @@ def test_get_gradients():
         assert gradients.shape[1] == 10, "Second dimension should be 10 (n_components)"
 
 def test_get_gradients_aligned():
-    gradients = get_gradients(example_data, '52', n_components = 10, task = "rest", aligned = True)
+    gradients = get_gradients(example_data, '53', n_components = 10, task = "rest", aligned = True)
     assert len(gradients.shape) == 3, "Aligned gradients should be a 3D array"
     assert gradients.shape[1] == 1000, "Second dimension should be 1000 (n_parcels)"
     assert gradients.shape[2] == 10, "Third dimension should be 10 (n_components)"
