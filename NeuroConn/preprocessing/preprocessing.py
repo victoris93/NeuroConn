@@ -289,11 +289,11 @@ class FmriPreppedDataSet(RawDataset):
         self.data_path = self.BIDS_path + '/derivatives'
         self.data_path = self._find_sub_dirs()
         self.default_confounds_path = os.path.join(os.path.dirname(__file__), "default_confounds.txt")
+        self.default_output_dir = os.path.join(self.data_path, 'clean_data')
         self.subject_conn_paths = {}
         for subject in self.subjects:
-            output_dir =os.path.join(self.data_path,'clean_data', f'sub-{subject}', 'func')
-            if os.path.exists(output_dir):
-                conn_mat_paths = [f'{output_dir}/{i}' for i in os.listdir(output_dir) if "conn-matrix" in i]
+            if os.path.exists(self.default_output_dir):
+                conn_mat_paths = [f'{self.default_output_dir}/{i}' for i in os.listdir(self.default_output_dir) if "conn-matrix" in i]
                 if len(conn_mat_paths) != 0:
                     self.subject_conn_paths[subject] = conn_mat_paths[0]
     def __repr__(self):
@@ -530,7 +530,7 @@ class FmriPreppedDataSet(RawDataset):
         clean_ts_array = np.array(clean_ts_array)
         if save == True:
             if save_to is None:
-                save_dir = os.path.join(f'{self.data_path}', 'clean_data', f'sub-{subject}', 'func')
+                save_dir = os.path.join(f'{self.default_output_dir}', f'sub-{subject}', 'func')
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
                 save_to = os.path.join(f'{save_dir}', f'clean-ts-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
@@ -591,7 +591,7 @@ class FmriPreppedDataSet(RawDataset):
                     z_suffix = 'z-'
         if save == True:
             if save_to is None:
-                save_dir = os.path.join(f'{self.data_path}', 'clean_data', f'sub-{subject}', 'func')
+                save_dir = os.path.join(f'{self.default_output_dir}', f'sub-{subject}', 'func')
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
                 save_to = os.path.join(save_dir, f'{z_suffix}conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
