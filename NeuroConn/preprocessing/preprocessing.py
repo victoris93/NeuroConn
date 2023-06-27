@@ -292,12 +292,13 @@ class FmriPreppedDataSet(RawDataset):
         self.default_output_dir = os.path.join(self.data_path, 'clean_data')
         self.subject_conn_paths = {}
         for subject in self.subjects:
-            if os.path.exists(self.default_output_dir):
-                conn_mat_paths = [f'{self.default_output_dir}/{i}' for i in os.listdir(self.default_output_dir) if "conn-matrix" in i]
+            sub_output_dir = os.path.join(self.default_output_dir, f'sub-{subject}', 'func')
+            if os.path.exists(sub_output_dir):
+                conn_mat_paths = [f'{sub_output_dir}/{i}' for i in os.listdir(sub_output_dir) if "conn-matrix" in i]
                 if len(conn_mat_paths) != 0:
                     self.subject_conn_paths[subject] = conn_mat_paths[0]
     def __repr__(self):
-        return f'Subjects={self.subjects},\n Data_Path={self.data_path})'
+        return f'Subjects={self.subjects},\n Data_Path={self.data_path}'
     
     def _find_sub_dirs(self):
         """

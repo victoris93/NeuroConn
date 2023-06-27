@@ -44,7 +44,7 @@ def test_conn_matrix():
     assert os.path.exists(path_conn_matrix), "Matrix was not saved"
 
 def test_get_gradients():
-    gradients = get_gradients(example_data, '53', n_components = 10, task = "rest", aligned = False)
+    gradients = get_gradients(example_data, subject = '53', n_components = 10, task = "rest", aligned = False)
     if len(gradients.shape) == 3:
         assert gradients.shape[0] == 1, "First dimension should be 1 (n_sessions)"
         assert gradients.shape[1] == 1000, "Second dimension should be 1000 (n_parcels)"

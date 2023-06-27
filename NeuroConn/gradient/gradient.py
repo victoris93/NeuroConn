@@ -98,6 +98,7 @@ def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', 
         raise ValueError("data must be either a FmriPreppedDataSet object or a string.")
     prefix = ''
     if from_mat:
+        print(fmriprepped_data.subject_conn_paths)
         input_path = fmriprepped_data.subject_conn_paths[subject]
     input_data = np.load(input_path)
     if len(input_data.shape) == 3:
