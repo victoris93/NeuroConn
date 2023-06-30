@@ -11,6 +11,7 @@ from nilearn import signal
 from sklearn.impute import SimpleImputer
 import subprocess as sp
 import platform
+import glob
 
 output_spaces = {
     "anat": "T1w",
@@ -174,13 +175,6 @@ class RawDataset():
         self._name = None
         self._data_description = None
         self._subjects = None
-    
-    def _bold_tr(self, subject, task):
-        bold_file_path = os.path.join(self.BIDS_path, f'sub-{subject}', 'func', f'sub-{subject}_task-{task}_bold.nii.gz')
-        img = nib.load(bold_file_path)
-        bold_tr = img.header.get_zooms()[-1]
-        return bold_tr
-
 
     def docker_fmriprep(self, subject, fs_license_path, nthreads, fs_recon_all = False, mem_mb = 5000, task = 'rest', nipreps_wrapper = True, output_spaces = 'MNI152NLin2009cAsym:res-2', skip_bids_validation = True, work_path = os.path.expanduser('~'), sloppy = False):
 
@@ -251,6 +245,78 @@ class RawDataset():
 
         with open(log_file, "r") as file:
             print(file.read())
+
+    def get_sessions(self, subject):
+        """
+        Returns a list of session names for a given subject. If the subject has no sessions, an empty list is returned.
+
+        Parameters
+        ----------
+        subject : str
+            The label of the subject to retrieve session names for.
+
+        Returns
+        -------
+        list of str
+            A list of session names for the given subject.
+        """
+        subject_dir = f'{self.BIDS_path}/sub-{subject}'
+        subdirs = os.listdir(subject_dir)
+        session_names = []
+        for subdir in subdirs:
+            if subdir.startswith('ses-'):
+                session_names.append(subdir[4:])
+        return session_names
+    
+    def get_ts_paths(self, subject, task, output_space = None): 
+        """
+        Parameters
+        ----------
+        subject : str
+            The subject ID.
+        task : str
+            The ID of the task to preprocess. Default is 'rest'.
+
+        Returns
+        -------
+        ts_paths : list
+            A list of paths to the time series files.
+        """
+        if output_space == None:
+            output_space = ''
+        else:
+            output_space = output_spaces[output_space]
+        subject_dir = os.path.join(self.BIDS_path, f'sub-{subject}')
+        session_names = self.get_sessions(subject)
+        ts_paths = []
+        if len(session_names) != 0:
+            for session_name in session_names:
+                session_dir = os.path.join(subject_dir, f'ses-{session_name}', 'func')
+                if os.path.exists(session_dir):
+                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith('.nii.gz')])
+        else:
+            subject_dir = os.path.join(subject_dir, 'func')
+            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith('.nii.gz')] 
+        return ts_paths
+    
+    def _bold_tr(self, subject, task):
+        bold_file_path = self.get_ts_paths(subject, task)[0]
+        img = nib.load(bold_file_path)
+        bold_tr = img.header.get_zooms()[-1]
+        if bold_tr == 0:
+            print("TR in img header is 0. Trying to find TR in json params.")
+            try:
+                bold_params_path = bold_file_path.replace('.nii.gz', '.json')
+                bold_tr = json.load(open(bold_params_path))['RepetitionTime']
+            except FileNotFoundError:
+                print(f"No params found for {subject} and task {task}. Looking for group-level params.")
+            try:
+                bold_params_path = os.path.join(self.BIDS_path, f'task-{task}_bold.json')
+                bold_tr = json.load(open(bold_params_path))['RepetitionTime']
+            except FileNotFoundError:
+                print(f"No BOLD params found. Returning None.")
+                bold_tr = None
+        return bold_tr
     
     @property
     def participant_data(self):
@@ -270,6 +336,14 @@ class RawDataset():
         if self._data_description is None:
             self._data_description = json.load(open(self.data_description_path))
         return self._data_description
+    
+    @property
+    def bold_params(self):
+        scan_params = json.load(open(f'{self.BIDS_path}/', 'r'))
+        # load json
+        # return dict
+        
+        return self._subjects
 
     @property
     def name(self):
@@ -299,6 +373,7 @@ class FmriPreppedDataSet(RawDataset):
                     self.subject_conn_paths[subject] = conn_mat_paths[0]
     def __repr__(self):
         return f'Subjects={self.subjects},\n Data_Path={self.data_path}'
+
     
     def _find_sub_dirs(self):
         """
@@ -402,6 +477,34 @@ class FmriPreppedDataSet(RawDataset):
         else:
             df_no_nans = pd.DataFrame(imputer.fit_transform(dataframe), columns=dataframe.columns)
         return df_no_nans
+    
+    def _bold_tr(self, subject, task):
+        raw_dataset = RawDataset(self.BIDS_path)
+        try:
+            bold_file_path = raw_dataset.get_ts_paths(subject, task)[0]
+            img = nib.load(bold_file_path)
+            bold_tr = img.header.get_zooms()[-1]
+        except FileNotFoundError:
+            print(f"No BOLD file found for {subject} and task {task}. Returning None.")
+            bold_file_path = None
+            bold_tr = None
+        if bold_tr == None:
+            print("TR in img header is 0. Trying to find TR in json params.")
+            if bold_file_path != None:
+                try:
+                    bold_params_path = bold_file_path.replace('.nii.gz', '.json')
+                    bold_tr = json.load(open(bold_params_path))['RepetitionTime']
+                except FileNotFoundError:
+                    print(f"No params found for {subject} and task {task}. Looking for group-level params.")
+                    bold_tr = None
+            if bold_tr == 0 or bold_tr == None:
+                try:
+                    bold_params_path = os.path.join(self.BIDS_path, f'task-{task}_bold.json')
+                    bold_tr = json.load(open(bold_params_path))['RepetitionTime']
+                except FileNotFoundError:
+                    print(f"No BOLD params found. Returning None.")
+                    bold_tr = None
+        return bold_tr
     
     def get_confounds(self, subject, task, no_nans = True, pick_confounds = None):
         """
