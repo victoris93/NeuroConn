@@ -11,6 +11,8 @@ from nilearn import signal
 from sklearn.impute import SimpleImputer
 import subprocess as sp
 import platform
+import hcp_utils as hcp
+import pickle as pkl
 import glob
 
 output_spaces = {
@@ -22,7 +24,8 @@ output_spaces = {
     "MNI152NLin6Asym":"MNI152NLin6Asym",
     "MNI152NLin2009cAsym":"MNI152NLin2009cAsym",
     "fsaverage":"fsaverage",
-    "MNI152NLin2009cAsym:res-2":"MNI152NLin2009cAsym_res-2"
+    "MNI152NLin2009cAsym:res-2":"MNI152NLin2009cAsym_res-2",
+    "fsLR_91k":"fsLR_den-91k"
 }
 
 def parse_path_windows_docker(path):
@@ -293,14 +296,14 @@ class RawDataset():
             for session_name in session_names:
                 session_dir = os.path.join(subject_dir, f'ses-{session_name}', 'func')
                 if os.path.exists(session_dir):
-                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith('.nii.gz')])
+                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and output_space in i and i.endswith('.nii.gz')])
         else:
             subject_dir = os.path.join(subject_dir, 'func')
-            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith('.nii.gz')] 
+            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and output_space in i and i.endswith('.nii.gz')] 
         return ts_paths
     
-    def _bold_tr(self, subject, task):
-        bold_file_path = self.get_ts_paths(subject, task)[0]
+    def _bold_tr(self, subject, task, output_space = None):
+        bold_file_path = self.get_ts_paths(subject, task, output_space)[0]
         img = nib.load(bold_file_path)
         bold_tr = img.header.get_zooms()[-1]
         if bold_tr == 0:
@@ -339,7 +342,7 @@ class RawDataset():
     
     @property
     def bold_params(self):
-        scan_params = json.load(open(f'{self.BIDS_path}/', 'r'))
+        scan_params = json.load(open(f'{self.BIDS_path}/dataset', 'r'))
         # load json
         # return dict
         
@@ -358,12 +361,15 @@ class RawDataset():
 
 class FmriPreppedDataSet(RawDataset):
 
-    def __init__(self, BIDS_path):
+    def __init__(self, BIDS_path, output_dir = None):
         super().__init__(BIDS_path)
         self.data_path = self.BIDS_path + '/derivatives'
         self.data_path = self._find_sub_dirs()
         self.default_confounds_path = os.path.join(os.path.dirname(__file__), "default_confounds.txt")
-        self.default_output_dir = os.path.join(self.data_path, 'clean_data')
+        if output_dir is None:
+            self.default_output_dir = os.path.join(self.data_path, 'clean_data')
+        else:
+            self.default_output_dir = output_dir
         self.subject_conn_paths = {}
         for subject in self.subjects:
             sub_output_dir = os.path.join(self.default_output_dir, f'sub-{subject}', 'func')
@@ -401,8 +407,7 @@ class FmriPreppedDataSet(RawDataset):
                         self.data_path = os.path.join(self.data_path, subdir)
         return self.data_path
     
-    def get_ts_paths(self, subject, task, output_space = None): 
-        #numpy-style docstring
+    def get_ts_paths(self, subject, task, output_space = None, surf = False): 
         """
         Parameters
         ----------
@@ -416,6 +421,10 @@ class FmriPreppedDataSet(RawDataset):
         ts_paths : list
             A list of paths to the time series files.
         """
+        if not surf:
+            path_ending = "_desc-preproc_bold.nii.gz"
+        else:
+            path_ending = "_bold.dtseries.nii"
         if output_space == None:
             output_space = ''
         else:
@@ -427,10 +436,11 @@ class FmriPreppedDataSet(RawDataset):
             for session_name in session_names:
                 session_dir = os.path.join(subject_dir, f'ses-{session_name}', 'func')
                 if os.path.exists(session_dir):
-                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith(f'{output_space}_desc-preproc_bold.nii.gz')])
+                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith(f'{output_space}{path_ending}')])
         else:
             subject_dir = os.path.join(subject_dir, 'func')
-            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith(f'{output_space}_desc-preproc_bold.nii.gz')] 
+            ts_paths = os.listdir(subject_dir)
+            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith(f'{output_space}{path_ending}')] 
         return ts_paths
     
     def get_sessions(self, subject):
@@ -598,7 +608,21 @@ class FmriPreppedDataSet(RawDataset):
                 parc_ts_list.append(parc_ts)
         return parc_ts_list
     
-    def clean_signal(self, subject, task="rest", parcellation='schaefer', n_parcels=1000, gsr=False, save = False, save_to = None, output_space = None): # add a save option + path
+    def surf_smooth(self, subject, task, output_space, smth_surf_kernel, smth_vol_kernel, smth_direction, left_surf, right_surf, smth_output_dir = None):
+        ciftis = self.get_ts_paths(subject, task, output_space = output_space, surf = True)
+        output_smoothed_ciftis = []
+        for cifti in ciftis:
+            if smth_output_dir is None:
+                smth_output_cifti = cifti.replace('.dtseries.nii', f'_smoothed{smth_surf_kernel}mm.dtseries.nii')
+            else:
+                out_file = cifti.split('/')[-1]
+                smth_output_cifti = os.path.join(smth_output_dir, out_file.replace('.dtseries.nii', f'_smoothed{smth_surf_kernel}mm.dtseries.nii'))
+            os.system(f"wb_command -cifti-smoothing {cifti} {smth_surf_kernel} {smth_vol_kernel} {smth_direction} {smth_output_cifti} -left-surface {left_surf} -right-surface {right_surf}")
+            output_smoothed_ciftis.append(smth_output_cifti)
+        print("Output Cifits: ", output_smoothed_ciftis)
+        return output_smoothed_ciftis
+
+    def clean_signal(self, subject, task, smooth = None, smth_surf_kernel=None, smth_vol_kernel=None, smth_direction=None, left_surf = None, right_surf =None, smth_output_dir = None, bold_tr = None, parcellation='schaefer', n_parcels=1000, gsr=False, save = False, save_to = None, output_space = None, surf = False): # add a save option + path
         """
         Cleans the time series for a given subject using a specified parcellation.
 
@@ -624,26 +648,39 @@ class FmriPreppedDataSet(RawDataset):
         np.ndarray
             The cleaned time series of shape (n_sessions, n_parcels, n_volumes).
         """
-        parc_ts_list = self.parcellate(subject, parcellation, task, n_parcels, gsr, output_space)
-        clean_ts_array =[]
-        bold_tr = self._bold_tr(subject, task)
-        for parc_ts in parc_ts_list:
-            clean_ts = signal.clean(parc_ts, t_r = bold_tr, low_pass=0.08, high_pass=0.01, standardize='zscore_sample', detrend=True)
+        clean_ts_array = []
+        if bold_tr is None:
+            bold_tr = self._bold_tr(subject, task)
+        if not surf:
+            ts_list = self.parcellate(subject, parcellation, task, n_parcels, gsr, output_space)
+            parcellation = ''
+            n_parcels = ''
+        else:   
+            surf_res = output_spaces[output_space]
+            if smooth:
+                ts_paths = self.surf_smooth(subject, task, output_space, smth_surf_kernel, smth_vol_kernel, smth_direction, left_surf, right_surf, smth_output_dir)
+            else:
+                ts_paths = self.get_ts_paths(subject, task, output_space, surf)
+            ts_list = [nib.load(ts_path).get_fdata() for ts_path in ts_paths]
+            ts_list = [np.array([hcp.cortex_data(time_slice) for time_slice in ts]) for ts in ts_list]
+            if smooth:
+                for ts in ts_paths:
+                    os.system(f"rm {ts}")
+        for ts in ts_list:
+            clean_ts = signal.clean(ts, t_r = bold_tr, low_pass=0.08, high_pass=0.01, standardize='zscore_sample', detrend=True)
             print("Shape of clean_ts: ", clean_ts.shape)
-            clean_ts_array.append(clean_ts[10:]) # discarding first 10 volumes
-        clean_ts_array = np.array(clean_ts_array)
+            clean_ts_array.append(clean_ts[10:])
         if save == True:
             if save_to is None:
                 save_dir = os.path.join(f'{self.default_output_dir}', f'sub-{subject}', 'func')
                 if not os.path.exists(save_dir):
                     os.makedirs(save_dir)
-                save_to = os.path.join(f'{save_dir}', f'clean-ts-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
-            else:
-                save_to = os.path.join(save_to, f'clean-ts-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
-            np.save(save_to, clean_ts_array)
+                save_to = os.path.join(f'{save_dir}', f'clean-ts-sub-{subject}-{task}-{surf_res}{parcellation}{n_parcels}.pkl')
+            with open(save_to, 'wb') as handle:
+                pkl.dump(clean_ts_array, handle)
         return clean_ts_array
     
-    def get_conn_matrix(self, subject, subject_ts = None, parcellation = 'schaefer', task = 'rest', concat_ts = False, n_parcels = 1000, gsr = False, z_transformed = True, save = False, save_to = None, output_space = None):
+    def get_conn_matrix(self, subject, task, bold_tr = None, subject_ts = None, concat_ts = True, z_transformed = True, smooth = None, smth_surf_kernel=None, smth_vol_kernel=None, smth_direction=None, left_surf = None, right_surf =None, smth_output_dir = None, parcellation='schaefer', n_parcels=1000, gsr=False, output_space = None, surf = False, save = False, save_to = None):
         """
         Computes the connectivity matrix for a given subject.
 
@@ -677,7 +714,7 @@ class FmriPreppedDataSet(RawDataset):
         """
         z_suffix = ''
         if subject_ts is None:
-            subj_ts_array = self.clean_signal(subject, task, parcellation, n_parcels, gsr, output_space = output_space)
+            subj_ts_array = self.clean_signal(subject, task = task, bold_tr = bold_tr, parcellation = parcellation, n_parcels = n_parcels, gsr = gsr, output_space = output_space, surf = surf, smooth = smooth, smth_surf_kernel=smth_surf_kernel, smth_vol_kernel=smth_vol_kernel, smth_direction=smth_direction, left_surf = left_surf, right_surf =right_surf, smth_output_dir = smth_output_dir)
         else:
             subj_ts_array = np.load(subject_ts)
         if concat_ts == True:
@@ -687,7 +724,7 @@ class FmriPreppedDataSet(RawDataset):
                 conn_matrix = z_transform_conn_matrix(conn_matrix)
                 z_suffix = 'z-'
         else:
-            conn_matrix = np.zeros((subj_ts_array.shape[0], n_parcels, n_parcels))
+            conn_matrix = np.zeros((len(subj_ts_array), n_parcels, n_parcels))
             for i, subj_ts in enumerate(subj_ts_array):
                 conn_matrix[i] = np.corrcoef(subj_ts.T)
                 if z_transformed == True:
@@ -695,14 +732,10 @@ class FmriPreppedDataSet(RawDataset):
                     z_suffix = 'z-'
         if save == True:
             if save_to is None:
-                save_dir = os.path.join(f'{self.default_output_dir}', f'sub-{subject}', 'func')
-                if not os.path.exists(save_dir):
-                    os.makedirs(save_dir)
-                save_to = os.path.join(save_dir, f'{z_suffix}conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
-            else:
-                save_to = os.path.join(save_to, f'{z_suffix}conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
-
+                save_to = os.path.join(f'{self.default_output_dir}', f'sub-{subject}', 'func')
+                if not os.path.exists(save_to):
+                    os.makedirs(save_to)
+            save_to = os.path.join(save_to, f'{z_suffix}conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
             self.subject_conn_paths[subject] = save_to
-
             np.save(save_to, conn_matrix)
         return conn_matrix
