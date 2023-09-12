@@ -14,7 +14,6 @@ align_refs = {
 "hcp10": os.path.join(os.path.dirname(__file__), 'hcp_grads_schaefer1000_pearson_90th.npy'),
 }
 
-
 def align_gradients(gradients, n_components, ref = 'hcp10', custom_ref = None, *args):
     """
     Aligns gradients to a reference set of gradients using Procrustes alignment.
@@ -72,7 +71,7 @@ def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', 
     n_parcels : int, optional
         The number of parcels. Default is 1000.
     kernel : str, optional
-        The kernel to use. Default is 'cosine'.
+        The kernel to use. Default is None.
     approach : str, optional
         The approach to use. Default is 'pca'.
     from_mat : bool, optional
@@ -98,19 +97,22 @@ def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', 
         raise ValueError("data must be either a FmriPreppedDataSet object or a string.")
     prefix = ''
     if from_mat:
-        print(fmriprepped_data.subject_conn_paths)
         input_path = fmriprepped_data.subject_conn_paths[subject]
     input_data = np.load(input_path)
     if len(input_data.shape) == 3:
         gradients = []
+        var_explained = []
         for i in input_data:
             gm.fit(i)
             gradients.append(gm.gradients_)
+            var_explained.append(gm.lambdas_)
             gm = GradientMaps(n_components = n_components, kernel = kernel, approach = approach)
         gradients = np.asarray(gradients)
+        var_explained = np.asarray(var_explained)
     elif len(input_data.shape) == 2:
         gm.fit(input_data)
         gradients = gm.gradients_
+        var_explained = gm.lambdas_
     if aligned:
         gradients = align_gradients(gradients, n_components)
         prefix = "aligned-"
@@ -124,4 +126,4 @@ def get_gradients(data, subject, n_components, task, parcellation = 'schaefer', 
             save_to = os.path.join(save_to, f'{prefix}{n_components}gradients-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
         np.save(file = save_to, arr = gradients)
 
-    return gradients
+    return gradients, var_explained
