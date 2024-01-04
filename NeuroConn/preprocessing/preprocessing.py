@@ -571,7 +571,7 @@ class FmriPreppedDataSet(RawDataset):
 
         return confound_list
     
-    def parcellate(self, subject, parcellation = 'schaefer',task ="rest", n_parcels = 1000, gsr = False, output_space = None): # adapt to multiple sessions
+    def parcellate(self, subject, task, parcellation = None, n_parcels = None, gsr = False, output_space = None): # adapt to multiple sessions
         """
         Parameters
         ----------
@@ -594,6 +594,8 @@ class FmriPreppedDataSet(RawDataset):
         atlas = None
         if parcellation == 'schaefer':
             atlas = datasets.fetch_atlas_schaefer_2018(n_rois=n_parcels, yeo_networks=7, resolution_mm=1, base_url= None, resume=True, verbose=1)
+        elif parcellation == 'destrieux':
+            atlas = datasets.fetch_atlas_destrieux_2009(lateralized=True, resume=True, verbose=1)
         masker =  NiftiLabelsMasker(labels_img=atlas.maps, standardize=True, memory='nilearn_cache', verbose=5)
 
         parc_ts_list = []
@@ -622,7 +624,7 @@ class FmriPreppedDataSet(RawDataset):
         print("Output Cifits: ", output_smoothed_ciftis)
         return output_smoothed_ciftis
 
-    def clean_signal(self, subject, task, smooth = None, smth_surf_kernel=None, smth_vol_kernel=None, smth_direction=None, left_surf = None, right_surf =None, smth_output_dir = None, bold_tr = None, parcellation='schaefer', n_parcels=1000, gsr=False, save = False, save_to = None, output_space = None, surf = False): # add a save option + path
+    def clean_signal(self, subject, task, smooth = None, smth_surf_kernel=None, smth_vol_kernel=None, smth_direction=None, left_surf = None, right_surf =None, smth_output_dir = None, bold_tr = None, parcellation=None, n_parcels=None, gsr=False, save = False, save_to = None, output_space = None, surf = False): # add a save option + path
         """
         Cleans the time series for a given subject using a specified parcellation.
 
@@ -648,13 +650,16 @@ class FmriPreppedDataSet(RawDataset):
         np.ndarray
             The cleaned time series of shape (n_sessions, n_parcels, n_volumes).
         """
+        surf_res = ''
         clean_ts_array = []
+        if n_parcels is None:
+            n_parcels = ''
+        if parcellation is None:
+            parcellation = ''
         if bold_tr is None:
             bold_tr = self._bold_tr(subject, task)
         if not surf:
-            ts_list = self.parcellate(subject, parcellation, task, n_parcels, gsr, output_space)
-            parcellation = ''
-            n_parcels = ''
+            ts_list = self.parcellate(subject = subject, parcellation = parcellation, task = task, n_parcels = n_parcels, gsr = gsr, output_space = output_space)
         else:   
             surf_res = output_spaces[output_space]
             if smooth:
@@ -680,7 +685,7 @@ class FmriPreppedDataSet(RawDataset):
                 pkl.dump(clean_ts_array, handle)
         return clean_ts_array
     
-    def get_conn_matrix(self, subject, task, bold_tr = None, subject_ts = None, concat_ts = True, z_transformed = True, smooth = None, smth_surf_kernel=None, smth_vol_kernel=None, smth_direction=None, left_surf = None, right_surf =None, smth_output_dir = None, parcellation='schaefer', n_parcels=1000, gsr=False, output_space = None, surf = False, save = False, save_to = None):
+    def get_conn_matrix(self, subject, task, bold_tr = None, subject_ts = None, concat_ts = True, z_transformed = True, smooth = None, smth_surf_kernel=None, smth_vol_kernel=None, smth_direction=None, left_surf = None, right_surf =None, smth_output_dir = None, parcellation=None, n_parcels=None, gsr=False, output_space = None, surf = False, save = False, save_to = None):
         """
         Computes the connectivity matrix for a given subject.
 
