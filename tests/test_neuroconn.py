@@ -35,11 +35,8 @@ def test_conn_matrix():
     fmriprepped_data = FmriPreppedDataSet(example_data)
     conn_matrix = fmriprepped_data.get_conn_matrix(subject, task = "rest", save = True, z_transformed=True, parcellation="schaefer", n_parcels=1000)
     path_conn_matrix = os.path.join(f'{fmriprepped_data.data_path}', 'clean_data', f'sub-{subject}', 'func', f'z-conn-matrix-sub-{subject}-rest-schaefer1000.npy')
-
-    assert conn_matrix.shape[0] == 1, "First dimension should be 1 (n_sessions)"
-    assert conn_matrix.shape[1] == 1000, "Second dimension should be 1000 (n_parcels)"
-    assert conn_matrix.shape[2] == 1000, "Third dimension should be 1000 (n_parcels)"
-    
+    assert conn_matrix.shape[0] == 1000, "Second dimension should be 1000 (n_parcels)"
+    assert conn_matrix.shape[1] == 1000, "Third dimension should be 1000 (n_parcels)"
     assert os.path.exists(path_conn_matrix), "Matrix was not saved"
 
 def test_get_gradients():
