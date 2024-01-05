@@ -516,6 +516,25 @@ class FmriPreppedDataSet(RawDataset):
                     bold_tr = None
         return bold_tr
     
+    def _match_confouds_ts(self, confounds, ts):
+        if not isinstance(confounds, list):
+            confounds = [confounds]
+        if not isinstance(ts, list):
+            ts = [ts]
+
+        matched_confounds = []
+        matched_ts = []
+
+        for confound_df in confounds:
+            for ts_file in ts:
+                ts_img = nib.load(ts_file)
+                if confound_df.shape[0] == ts_img.shape[-1]:
+                    matched_confounds.append(confound_df)
+                    matched_ts.append(ts_file)
+                    break
+
+        return matched_confounds, matched_ts
+
     def get_confounds(self, subject, task, no_nans = True, pick_confounds = None):
         """
         Returns a list of confounds for a given subject and task.
@@ -568,7 +587,6 @@ class FmriPreppedDataSet(RawDataset):
                 confound_list = [self._impute_nans_confounds(pd.read_csv(i, sep = '\t'), pick_confounds) for i in confound_files]
             else:
                 confound_list = [pd.read_csv(i, sep = '\t') for i in confound_files]
-
         return confound_list
     
     def parcellate(self, subject, task, parcellation = None, n_parcels = None, gsr = False, output_space = None): # adapt to multiple sessions
@@ -601,6 +619,8 @@ class FmriPreppedDataSet(RawDataset):
         parc_ts_list = []
         subject_ts_paths = self.get_ts_paths(subject, task, output_space = output_space)
         confounds = self.get_confounds(subject, task)
+        confouds, subject_ts_paths = self._match_confouds_ts(confounds, subject_ts_paths)
+
         for subject_ts, subject_confounds in zip(subject_ts_paths, confounds):
             if gsr == False:
                 parc_ts = masker.fit_transform(subject_ts, confounds = subject_confounds.drop("global_signal", axis = 1))
