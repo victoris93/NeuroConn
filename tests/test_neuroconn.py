@@ -38,8 +38,8 @@ def test_conn_matrix():
     path_conn_matrix = os.path.join(f'{fmriprepped_data.data_path}', 'clean_data', f'sub-{subject}', 'func', f'z-conn-matrix-sub-{subject}-rest-schaefer400.npy')
 
     assert conn_matrix.shape[0] == 1, "First dimension should be 1 (n_sessions)"
-    assert conn_matrix.shape[1] == 1000, "Second dimension should be 400 (n_parcels)"
-    assert conn_matrix.shape[2] == 1000, "Third dimension should be 400 (n_parcels)"
+    assert conn_matrix.shape[1] == 400, "Second dimension should be 400 (n_parcels)"
+    assert conn_matrix.shape[2] == 400, "Third dimension should be 400 (n_parcels)"
     
     assert os.path.exists(path_conn_matrix), "Matrix was not saved"
 
