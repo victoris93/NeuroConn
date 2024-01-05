@@ -23,7 +23,8 @@ setup(
         'nibabel',
         'brainspace',
         'gdown',
-        'fmriprep-docker', 
+        'fmriprep-docker',
+        'hcp-utils' 
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

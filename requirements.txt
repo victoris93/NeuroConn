@@ -6,3 +6,4 @@ nibabel
 scikit-learn
 brainspace
 gdown
+hcp-utils

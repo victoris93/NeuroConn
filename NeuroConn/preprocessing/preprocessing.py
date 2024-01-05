@@ -740,6 +740,8 @@ class FmriPreppedDataSet(RawDataset):
                 save_to = os.path.join(f'{self.default_output_dir}', f'sub-{subject}', 'func')
                 if not os.path.exists(save_to):
                     os.makedirs(save_to)
+            if n_parcels is None:
+                n_parcels = ''
             save_to = os.path.join(save_to, f'{z_suffix}conn-matrix-sub-{subject}-{task}-{parcellation}{n_parcels}.npy')
             self.subject_conn_paths[subject] = save_to
             np.save(save_to, conn_matrix)
