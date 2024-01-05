@@ -24,12 +24,11 @@ def test_session_names():
 
 def test_clean_signal_shape():
     subject = '53'
-    n_parcels = 1000
     fmriprepped_data = FmriPreppedDataSet(example_data)
     clean_ts_= np.asarray(fmriprepped_data.clean_signal(subject, task = "rest", parcellation="schaefer", n_parcels=400))
 
     assert clean_ts_.shape[0] == 1, "First dimension should be 1 (n_sessions)"
-    assert clean_ts_.shape[2] == n_parcels, "Third dimension should be 400 (n_parcels)"
+    assert clean_ts_.shape[2] == 400, "Third dimension should be 400 (n_parcels)"
 
 def test_conn_matrix():
     subject = '53'
@@ -44,7 +43,7 @@ def test_conn_matrix():
     assert os.path.exists(path_conn_matrix), "Matrix was not saved"
 
 def test_get_gradients():
-    gradients = get_gradients(example_data, subject = '53', n_components = 10, parcellation='schaefer', n_parcels = 400, task = "rest", aligned = False)
+    gradients, lambdas = get_gradients(example_data, subject = '53', n_components = 10, parcellation='schaefer', n_parcels = 400, task = "rest", aligned = False)
     if len(gradients.shape) == 3:
         assert gradients.shape[0] == 1, "First dimension should be 1 (n_sessions)"
         assert gradients.shape[1] == 400, "Second dimension should be 400 (n_parcels)"
@@ -54,7 +53,7 @@ def test_get_gradients():
         assert gradients.shape[1] == 10, "Second dimension should be 10 (n_components)"
 
 def test_get_gradients_aligned():
-    gradients = get_gradients(example_data, '53', n_components = 10, parcellation='schaefer', n_parcels = 400, task = "rest", aligned = True)
+    gradients, lambdas = get_gradients(example_data, '53', n_components = 10, parcellation='schaefer', n_parcels = 400, task = "rest", aligned = True)
     assert len(gradients.shape) == 3, "Aligned gradients should be a 3D array"
     assert gradients.shape[1] == 400, "Second dimension should be 400 (n_parcels)"
     assert gradients.shape[2] == 10, "Third dimension should be 10 (n_components)"
