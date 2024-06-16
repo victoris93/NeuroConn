@@ -14,6 +14,7 @@ import platform
 import hcp_utils as hcp
 import pickle as pkl
 import glob
+import re
 
 output_spaces = {
     "anat": "T1w",
@@ -296,10 +297,12 @@ class RawDataset():
             for session_name in session_names:
                 session_dir = os.path.join(subject_dir, f'ses-{session_name}', 'func')
                 if os.path.exists(session_dir):
-                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and output_space in i and i.endswith('.nii.gz')])
+                    ses_ts_paths = [f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and output_space in i and ".nii" in i]
+                    ses_ts_paths = sorted(ses_ts_paths, key=lambda x: int(re.search('run-(\d+)', x).group(1)))
+                    ts_paths.extend(ses_ts_paths)
         else:
             subject_dir = os.path.join(subject_dir, 'func')
-            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and output_space in i and i.endswith('.nii.gz')] 
+            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and output_space in i and ".nii" in i] 
         return ts_paths
     
     def _bold_tr(self, subject, task, output_space = None):
@@ -422,9 +425,9 @@ class FmriPreppedDataSet(RawDataset):
             A list of paths to the time series files.
         """
         if not surf:
-            path_ending = "_desc-preproc_bold.nii.gz"
+            ts_format = "_desc-preproc_bold"
         else:
-            path_ending = "_bold.dtseries.nii"
+            ts_format = "_bold.dtseries"
         if output_space == None:
             output_space = ''
         else:
@@ -436,11 +439,13 @@ class FmriPreppedDataSet(RawDataset):
             for session_name in session_names:
                 session_dir = os.path.join(subject_dir, f'ses-{session_name}', 'func')
                 if os.path.exists(session_dir):
-                    ts_paths.extend([f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and i.endswith(f'{output_space}{path_ending}')])
+                    ses_ts_paths = [f'{session_dir}/{i}' for i in os.listdir(session_dir) if task in i and output_space in i and ts_format in i and '.nii' in i]
+                    ses_ts_paths = sorted(ses_ts_paths, key=lambda x: int(re.search('run-(\d+)', x).group(1)))
+                    ts_paths.extend(ses_ts_paths)
         else:
             subject_dir = os.path.join(subject_dir, 'func')
             ts_paths = os.listdir(subject_dir)
-            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and i.endswith(f'{output_space}{path_ending}')] 
+            ts_paths = [f'{subject_dir}/{i}' for i in os.listdir(subject_dir) if task in i and output_space in i and ts_format in i and '.nii' in i] 
         return ts_paths
     
     def get_sessions(self, subject):
@@ -516,24 +521,25 @@ class FmriPreppedDataSet(RawDataset):
                     bold_tr = None
         return bold_tr
     
-    def _match_confouds_ts(self, confounds, ts):
-        if not isinstance(confounds, list):
-            confounds = [confounds]
-        if not isinstance(ts, list):
-            ts = [ts]
+    # def _match_confounds_ts(self, confounds, ts):
+    #     if not isinstance(confounds, list):
+    #         confounds = [confounds]
+    #     if not isinstance(ts, list):
+    #         ts = [ts]
 
-        matched_confounds = []
-        matched_ts = []
+    #     matched_confounds = []
+    #     matched_ts = []
 
-        for confound_df in confounds:
-            for ts_file in ts:
-                ts_img = nib.load(ts_file)
-                if confound_df.shape[0] == ts_img.shape[-1]:
-                    matched_confounds.append(confound_df)
-                    matched_ts.append(ts_file)
-                    break
+    #     for confound_df in confounds:
+    #         for ts_file in ts:
+    #             print("Matching counfounds for time series: ", ts_file)
+    #             ts_img = nib.load(ts_file)
+    #             if confound_df.shape[0] == ts_img.shape[-1]:
+    #                 matched_confounds.append(confound_df)
+    #                 matched_ts.append(ts_file)
+    #                 break
 
-        return matched_confounds, matched_ts
+    #     return matched_confounds, matched_ts
 
     def get_confounds(self, subject, task, no_nans = True, pick_confounds = None):
         """
@@ -569,7 +575,9 @@ class FmriPreppedDataSet(RawDataset):
                 session_dir = os.path.join(subject_dir, f'ses-{session_name}', 'func')
                 if os.path.exists(session_dir):
                     confound_files = [os.path.join(session_dir, f) for f in os.listdir(session_dir) if task in f and f.endswith('confounds_timeseries.tsv')]
+                    confound_files = sorted(confound_files, key=lambda x: int(re.search('run-(\d+)', x).group(1)))
                     confound_paths.extend(confound_files)
+            print("Confounds files: ", confound_paths)
                     
             if no_nans == True:
                 for confounds_path in confound_paths:
@@ -619,9 +627,10 @@ class FmriPreppedDataSet(RawDataset):
         parc_ts_list = []
         subject_ts_paths = self.get_ts_paths(subject, task, output_space = output_space)
         confounds = self.get_confounds(subject, task)
-        confouds, subject_ts_paths = self._match_confouds_ts(confounds, subject_ts_paths)
+        # confounds, subject_ts_paths = self._match_confounds_ts(confounds, subject_ts_paths)
 
         for subject_ts, subject_confounds in zip(subject_ts_paths, confounds):
+            print("Parcellating timeseries: ", subject_ts)
             if gsr == False:
                 parc_ts = masker.fit_transform(subject_ts, confounds = subject_confounds.drop("global_signal", axis = 1))
                 parc_ts_list.append(parc_ts)
